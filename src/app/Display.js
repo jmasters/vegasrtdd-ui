@@ -6,17 +6,20 @@ define([
 ], function(declare, query, Spectra, TimeSeries) {
     return declare(null, {
         init: function(){
-            this.spectra      = new Spectra();
-            this.timeseries   = new TimeSeries();
-            this.spectralData = new Array();
+            this.spectra       = new Spectra(),
+            this.spectralData  = new Array(),
             this.spectra_index = 0,
             this.channel_index = 0,
-            this.heightScale  = .01;
-            this.width  = 800;
-            this.height = 600;
-            this.vertMargin  = 50;
-            this.hortMargin  = 50;
-            this.heightScale = .01;
+            this.width         = 800,
+            this.height        = 600,
+            this.vertMargin    = 50,
+            this.hortMargin    = 50,
+            this.heightScale   = .005,
+            this.rowCounter    = 0,
+            this.bufferSize    = Math.floor(1 / this.heightScale),
+            this.timeseries    = new TimeSeries(this.bufferSize);
+            this.primaryCanvas = "#waterfall1";
+            this.secondaryCanvas = "#waterfall2";
 
             this.drawAxis();
             this.initListeners();
@@ -59,7 +62,7 @@ define([
         updateNeighboringPlots: function(x, y) {
             // Converting the (x, y) position for the mouse click to the right indices.
             this.channel_index = Math.floor((x - this.hortMargin) / this.pointWidth);
-            this.spectra_index = Math.floor((y - this.vertMargin) / this.pointHeight);
+            this.spectra_index = Math.floor((y - this.vertMargin) / this.pointHeight) + 1;
             // Useful log for debugging
             //console.log("spactra at: " + this.channel_index + ", " + this.spectra_index);
             if (this.spectra_index < this.spectralData.length && this.spectra_index >= 0) {
@@ -81,7 +84,8 @@ define([
         },
         
         drawDisplay: function(data){
-            var c = query('#waterfall')[0];
+            var c = query(this.primaryCanvas)[0];
+            var c2 = query(this.secondaryCanvas)[0];
             var ctx = c.getContext("2d");
  
             var numChannels = data.length;
@@ -90,8 +94,11 @@ define([
             var xStart      = this.hortMargin;
             var yStart      = this.height;
             var value;
-            var i = this.spectralData.length;
-            c.style.top = "-" + (this.height - this.vertMargin - (this.pointHeight * i + 1)) + "px";
+            var i = this.rowCounter;
+            this.rowCounter += 1;
+            var pos = Math.round(this.height - this.vertMargin - (this.pointHeight * i + 1));
+            c.style.top = "-" + pos + "px";
+            c2.style.top = Math.round(this.pointHeight * i - 2) + "px";
             for(var j = 0; j < numChannels; j++){
                 value = data[j];
                 ctx.fillStyle = this.getFillColor(value);
@@ -100,6 +107,10 @@ define([
                	             this.pointWidth,
 		             this.pointHeight);
             }
+            //Clip the bottom
+            var ctx2 = c2.getContext("2d");
+            var clipPos = Math.round(c2.height - (this.pointHeight * i - 2));
+            ctx2.clearRect(0, clipPos, this.width, this.pointHeight + 2);  
             if (this.spectra_index < this.spectralData.length) {
                 this.spectra.plot(this.spectralData[this.spectra_index]);
             }
@@ -132,11 +143,18 @@ define([
         },
 
         addData: function(data){
-            var maxSize = 1 / this.heightScale;
+            var maxSize = Math.floor(1 / this.heightScale);
             if (this.spectralData.length >= maxSize){
-                this.spectralData = new Array();
-                this.clearCanvas('#waterfall');
-                this.timeseries.empty();
+                this.spectralData.pop();
+            }
+            if (this.rowCounter == maxSize) {
+                if (this.primaryCanvas == '#waterfall2'){
+                    this.clearCanvas(this.secondaryCanvas);
+                }
+                var temp = this.primaryCanvas;
+                this.primaryCanvas = this.secondaryCanvas;
+                this.secondaryCanvas = temp;
+                this.rowCounter = 0;
             }
             this.spectralData.unshift(data);
         },

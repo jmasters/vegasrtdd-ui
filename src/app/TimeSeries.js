@@ -5,7 +5,8 @@ define([
     'dojox/charting/themes/Claro',
 ], function(declare, query, Chart, theme) {
     return declare(null, {
-        constructor: function() {
+        constructor: function(bufferSize) {
+            this.bufferSize = bufferSize;
             var me = this;
             this.data = [];
             require(['dojox/charting/axis2d/Default',
@@ -13,8 +14,8 @@ define([
                     ], function(Default, Lines) {
                         me.chart = new Chart("timeseries");
                         me.chart.addPlot("default", {type: Lines});
-                        me.chart.addAxis("x", {min: 0, max: 100});
-                        me.chart.addAxis("y", {vertical: true });
+                        me.chart.addAxis("x", {min: 0, max: 200});
+                        me.chart.addAxis("y", {vertical: true, min: 4, max: 10});
                         me.chart.addSeries("y", []);
                         me.chart.render();
                     });
@@ -22,10 +23,17 @@ define([
 
         plot: function(data, channel) {
             if (data[channel]) {
-                this.data.unshift(data[channel]);
+                this.addData(data, channel);
                 this.chart.updateSeries("y", this.data);
                 this.chart.render();
             }
+        },
+
+        addData: function(data, channel) {
+            if (this.data.length >= this.bufferSize) {
+                this.data.pop();
+            }
+            this.data.unshift(data[channel]);
         },
 
         empty: function() {
