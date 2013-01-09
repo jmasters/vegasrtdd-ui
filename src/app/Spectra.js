@@ -7,6 +7,7 @@ define([
 ], function(declare, query, Chart, theme, PiePlot) {
     return declare(null, {
         constructor: function() {
+            // Setting up an empty chart.
             var me = this;
             require(["dojox/charting/axis2d/Default",
                      "dojox/charting/plot2d/Lines",
@@ -21,6 +22,7 @@ define([
         },
 
         plot: function(data) {
+            // Nothing to special here, if we have data plot it!
             if (data) {
                 var me = this;
                 require(["dojox/charting/axis2d/Default",
