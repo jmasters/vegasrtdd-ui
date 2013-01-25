@@ -5,7 +5,7 @@ define([
     'app/TimeSeries',
 ], function(declare, query, Spectra, TimeSeries) {
     return declare(null, {
-        init: function(){
+        constructor: function(){
             this.spectra       = new Spectra(),
             this.spectralData  = new Array(),
             this.spectra_index = 0,
@@ -24,9 +24,14 @@ define([
             this.drawAxis();
             this.initListeners();
 
+            // Change this to your own tornado server port
+            var port = 8889;
+
             // Opening the web socket.
-            var ws = new WebSocket("ws://colossus.gb.nrao.edu:8888/websocket");
+            var ws = new WebSocket("ws://colossus.gb.nrao.edu:" + port + "/websocket");
             var me = this;
+            // The following function handles data sent from the write_message
+            // server code in websocket.py
             ws.onmessage = function (evt) {
                 if (evt.data == 'close'){
                     console.log('Closing WebSocket.');
@@ -53,16 +58,17 @@ define([
             // the timeseries and spectral plots to show the selected row
             // and column (channel).
             query('#axis').on('click', function(e){
+                console.log(e);
                 var c = query("#axis")[0];
                 var ctx = c.getContext("2d");
                 me.clearCanvas("#axis");
                 me.drawAxis();
-                ctx.moveTo(e.x, 0);
-                ctx.lineTo(e.x, me.height);
-                ctx.moveTo(0, e.y);
-                ctx.lineTo(me.width, e.y);
+                ctx.moveTo(e.clientX, 0);
+                ctx.lineTo(e.clientX, me.height);
+                ctx.moveTo(0, e.clientY);
+                ctx.lineTo(me.width, e.clientY);
                 ctx.stroke();
-                me.updateNeighboringPlots(e.x, e.y);
+                me.updateNeighboringPlots(e.clientX, e.clientY);
             });
         },
 
@@ -136,6 +142,7 @@ define([
             c.style.top = "-" + pos + "px";
             c2.style.top = Math.round(this.pointHeight * i - 2) + "px";
             // Draw some rectangles
+            // Here we draw the new spectrum
             for(var j = 0; j < numChannels; j++){
                 value = data[j];
                 ctx.fillStyle = this.getFillColor(value);

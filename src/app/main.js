@@ -61,7 +61,6 @@ define([ 'dojo/has', 'require' ], function (has, require) {
 		require([ './Display', 'dojo/domReady!' ],
                     function (Display) {
                         var display = new Display();
-                        display.init();
 		});
 	}
 	else {
