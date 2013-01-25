@@ -1,0 +1,2 @@
+package.js and package.json are only required for building dojo JS code
+and isn't necessary to run the vegas_rtdd app
