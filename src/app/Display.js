@@ -30,6 +30,7 @@ define([
             // Opening the web socket.
             var ws = new WebSocket("ws://colossus.gb.nrao.edu:" + port + "/websocket");
             var me = this;
+
             // The following function handles data sent from the write_message
             // server code in websocket.py
             ws.onmessage = function (evt) {
