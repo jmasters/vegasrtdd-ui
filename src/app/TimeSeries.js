@@ -16,7 +16,7 @@ define([
                         me.chart.addPlot("default", {type: Lines});
                         me.chart.addAxis("x", {min: 0, max: 200});
                         me.chart.addAxis("y", {vertical: true, min: 4, max: 10});
-                        me.chart.addSeries("y", []);
+                        me.chart.addSeries("y", [], {stroke: {color:"blue"}});
                         me.chart.render();
                     });
         },

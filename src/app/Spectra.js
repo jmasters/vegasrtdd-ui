@@ -16,7 +16,7 @@ define([
                          me.chart.addPlot("default", {type: Lines});
                          me.chart.addAxis("x");
                          me.chart.addAxis("y", {vertical: true});
-                         me.chart.addSeries("spectra", []);
+                         me.chart.addSeries("spectra", [], {stroke: {color:"blue"}});
                          me.chart.render();
                      });
         },
