@@ -28,7 +28,9 @@ define([
             var port = 8889;
 
             // Opening the web socket.
-            var ws = new WebSocket("ws://colossus.gb.nrao.edu:" + port + "/websocket");
+            // var ws = new WebSocket("ws://colossus.gb.nrao.edu:" + port + "/websocket");
+            var ws = new WebSocket("ws://localhost:" + port + "/websocket");
+
             var me = this;
 
             // The following function handles data sent from the write_message
@@ -59,16 +61,20 @@ define([
             // the timeseries and spectral plots to show the selected row
             // and column (channel).
             query('#axis').on('click', function(e){
-                console.log(e);
-                var c = query("#axis")[0];
-                var ctx = c.getContext("2d");
+                // console.log(e);
+                var canvas = query("#axis")[0];
+                var context = canvas.getContext("2d");
                 me.clearCanvas("#axis");
                 me.drawAxis();
-                ctx.moveTo(e.clientX, 0);
-                ctx.lineTo(e.clientX, me.height);
-                ctx.moveTo(0, e.clientY);
-                ctx.lineTo(me.width, e.clientY);
-                ctx.stroke();
+
+                // draw crosshairs
+                context.beginPath();
+                context.moveTo(e.clientX, 0);
+                context.lineTo(e.clientX, me.height);
+                context.moveTo(0, e.clientY);
+                context.lineTo(me.width, e.clientY);
+                context.strokeStyle = 'red';  // make the crosshairs red
+                context.stroke();
                 me.updateNeighboringPlots(e.clientX, e.clientY);
             });
         },
@@ -97,12 +103,12 @@ define([
         },
             
         clearCanvas: function(id){
-            var c = query(id)[0];
-            var ctx = c.getContext("2d");
-            //ctx.clearRect(0, 0, c.width, c.height);
+            var canvas = query(id)[0];
+            //var context = canvas.getContext("2d");
+            //context.clearRect(0, 0, c.width, c.height);
             // clearRect doesn't always work for some reason.  Found this trick.
-            c.width = c.width;
-            c.height = c.height;
+            canvas.width = canvas.width;
+            canvas.height = canvas.height;
         },
         
         drawDisplay: function(data){
@@ -118,9 +124,9 @@ define([
             // we can continuiously plot the data.  When the primary
             // canvas fills up, we swap it with the secondary one.
 
-            var c = query(this.primaryCanvas)[0];
-            var c2 = query(this.secondaryCanvas)[0];
-            var ctx = c.getContext("2d");
+            var canvas = query(this.primaryCanvas)[0];
+            var canvas2 = query(this.secondaryCanvas)[0];
+            var context = canvas.getContext("2d");
  
             var numChannels = data.length;
             
@@ -134,28 +140,28 @@ define([
             var xStart      = this.hortMargin;
             var yStart      = this.height;
             var value;
-            var i = this.rowCounter; // just some short hand
+            var ii = this.rowCounter; // just some short hand
             this.rowCounter += 1;
             // Given the number of rows we have plotted, what should the position be?
-            var pos = Math.round(this.height - this.vertMargin - (this.pointHeight * i + 1));
+            var pos = Math.round(this.height - this.vertMargin - (this.pointHeight * ii + 1));
 
             // Set the canvases top position accordingly.
-            c.style.top = "-" + pos + "px";
-            c2.style.top = Math.round(this.pointHeight * i - 2) + "px";
+            canvas.style.top = "-" + pos + "px";
+            canvas2.style.top = Math.round(this.pointHeight * ii - 2) + "px";
             // Draw some rectangles
             // Here we draw the new spectrum
-            for(var j = 0; j < numChannels; j++){
-                value = data[j];
-                ctx.fillStyle = this.getFillColor(value);
-                ctx.fillRect(xStart + (this.pointWidth * j),
-	                     yStart - (this.pointHeight * i),
+            for(var jj = 0; jj < numChannels; jj++){
+                value = data[jj];
+                context.fillStyle = this.getFillColor(value);
+                context.fillRect(xStart + (this.pointWidth * jj),
+	                     yStart - (this.pointHeight * ii),
                	             this.pointWidth,
 		             this.pointHeight);
             }
             // Clip the bottom of the secondary canvas
-            var ctx2 = c2.getContext("2d");
-            var clipPos = Math.round(c2.height - (this.pointHeight * i - 2));
-            ctx2.clearRect(0, clipPos, this.width, this.pointHeight + 2);
+            var context2 = canvas2.getContext("2d");
+            var clipPos = Math.round(canvas2.height - (this.pointHeight * ii - 2));
+            context2.clearRect(0, clipPos, this.width, this.pointHeight + 2);
 
             // Update the spectra and timeseries plots with the new data we just got.
             if (this.spectra_index < this.spectralData.length) {
@@ -166,18 +172,19 @@ define([
         
         drawAxis: function() {
             // Nothing special.  Just drawing some lines for the axis.
-            var c = query('#axis')[0];
-            var ctx = c.getContext("2d");
-            var l = this.hortMargin; //Short hand
-            ctx.moveTo(l, this.vertMargin);
-            ctx.lineTo(l, this.height);
-            ctx.moveTo(l, this.vertMargin);
-            ctx.lineTo(this.width, this.vertMargin);
-            ctx.stroke();
+            var canvas = query('#axis')[0];
+            var context = canvas.getContext("2d");
+            context.beginPath();
+            context.moveTo(this.hortMargin, this.vertMargin); // upper left
+            context.lineTo(this.hortMargin, this.height);     // lower left
+            context.moveTo(this.hortMargin, this.vertMargin); // upper left
+            context.lineTo(this.width, this.vertMargin);  // upper right
+            context.strokeStyle = 'black';
+            context.stroke();
 
-            ctx.font = "20px Arial";
-            ctx.fillStyle = '#000000';
-            ctx.fillText("channels", this.width / 2.0, this.vertMargin - 10)
+            context.font = "20px Arial";
+            context.fillStyle = '#000000';
+            context.fillText("channels", this.width / 2.0, this.vertMargin - 10)
         },
     
         getFillColor: function(value){
