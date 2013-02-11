@@ -5,7 +5,7 @@ automatically combine all of your * @imported CSS files into a single
 file.
  *
  * It is highly, highly recommended that you develop your CSS using
- *Stylus: http://learnboost.github.com/stylus/.  /
+ *Stylus: http://learnboost.github.com/stylus/.  */
 
 @import '../../dojo/resources/dojo.css';
 @import '../../dijit/themes/claro/claro.css';
