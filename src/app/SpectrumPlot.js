@@ -21,7 +21,7 @@ define([
                      });
         },
 
-        plot: function(data) {
+        update: function(data) {
             // Nothing to special here, if we have data plot it!
             if (data) {
                 var me = this;
