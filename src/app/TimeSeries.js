@@ -1,9 +1,11 @@
 define([
     'dojo/_base/declare',
-    'dojo/query',
     'dojox/charting/Chart',
     'dojox/charting/themes/Claro',
-], function(declare, query, Chart, theme) {
+    'dojox/charting/axis2d/Default',
+    'dojox/charting/plot2d/Lines',
+    'dojo/ready'],
+    function(declare, Chart, theme, Default, Lines, ready) {
     return declare(null, {
         constructor: function(bufferSize) {
             // the size of the data buffer for plotting
@@ -11,22 +13,18 @@ define([
             //   defined in Display.js
             this.bufferSize = bufferSize; // plot buffer size (= nSpectra)
             this.ts_data = []; // the data to plot
-            var me = this;
-            require(['dojox/charting/axis2d/Default',
-                     'dojox/charting/plot2d/Lines',
-                    ], function(Default, Lines) {
-                        me.chart = new Chart("timeseries");
-                        me.chart.addPlot("default", {type: Lines});
-                        me.chart.addAxis("x", {min: 1, max: bufferSize});
-                        me.chart.addAxis("y", {vertical: true, min: 5, max: 10});
-                        me.chart.addSeries("y", [], {stroke: {color:"blue"}});
-                        me.chart.render();
-                    });
-        },
+            this.chart = new Chart("timeseries");
+            this.chart.addPlot("default", {type: Lines});
+            this.chart.addAxis("x", {min: 1, max: bufferSize, minorTicks: false});
+            this.chart.addAxis("y", {vertical: true, minorTicks: false});
+            this.chart.addSeries("y", [], {stroke: {color:"red", width:1}});
+            this.chart.render();
+            console.log('constructed a timeseries', typeof(this.chart));
+      },
 
-        plot: function(data, channel) {
-            // Check to make sure that there is data in the selected channel
-            if (data[channel]) {
+      plot: function(data, channel) {
+          // Check to make sure that there is data in the selected channel
+          if (data[channel]) {
                 // Insert data to the beginning of the buffer and honor
                 // the maximum buffer size.
                 if (this.ts_data.length >= this.bufferSize) {
@@ -34,7 +32,12 @@ define([
                     this.ts_data.unshift(data[channel]);
                 }
 
-//                 console.log('time series data',this.ts_data);
+                console.log('time series data',this.ts_data);
+                if (typeof(this.chart) == 'undefined') {
+                    console.log('chart undefined');
+                } else {
+                    console.log('updating timeseries');
+                }
                 this.chart.updateSeries("y", this.ts_data);
                 this.chart.render();
             }

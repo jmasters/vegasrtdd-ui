@@ -1,10 +1,9 @@
 define([
     'dojo/_base/declare',
-    'dojo/query',
     'dojox/charting/Chart',
     'dojox/charting/themes/Claro',
     'dojox/charting/plot2d/Pie',
-], function(declare, query, Chart, theme, PiePlot) {
+], function(declare, Chart, theme, PiePlot) {
     return declare(null, {
         constructor: function() {
             // Setting up an empty chart.
@@ -15,8 +14,8 @@ define([
                          me.chart = new Chart("spectra");
                          me.chart.addPlot("default", {type: Lines});
                          me.chart.addAxis("x");
-                         me.chart.addAxis("y", {vertical: true});
-                         me.chart.addSeries("spectra", [], {stroke: {color:"blue"}});
+                         me.chart.addAxis("y", {vertical: true, minorTicks: false});
+                         me.chart.addSeries("spectra", [], {stroke: {color:"red"}});
                          me.chart.render();
                      });
         },

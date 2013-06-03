@@ -6,21 +6,23 @@ define([
 ], function(declare, query, SpectrumPlot, TimeSeries) {
     return declare(null, {
         constructor: function(){
-            this.spectrumPlot  = new SpectrumPlot(),
+            this.spectrumPlot  = new SpectrumPlot();
             this.specData      = new Array(), // a buffer of all data
-            this.spectrum_index = 0,
-            this.channel_index = 0,
-            this.width         = 750,
-            this.height        = 550,
-            this.nSpectra      = 100, // number of spectra we show at once
+            this.spectrum_index = 0;
+            this.channel_index = 0;
+            this.width         = 512;
+            this.height        = 500;
+            this.nSpectra      = 100; // number of spectra we show at once
             this.pointHeight   = this.height / this.nSpectra;
-            this.pointWidth    = 0,
-            this.horzOffset    = 50,
-            this.vertOffset    = 50,
-            this.rowCounter    = 0,
+            this.pointWidth    = 0;
+            this.horzOffset    = 50;
+            this.vertOffset    = 50;
+            this.rowCounter    = 0;
             this.timeseries    = new TimeSeries(this.nSpectra);
             this.primaryCanvas = "#waterfall1";
             this.secondaryCanvas = "#waterfall2";
+            this.colormax = null;
+            this.colormin = null;
 
             this.drawAxis();
             this.initListeners();
@@ -29,7 +31,6 @@ define([
             var port = 8889;
 
             // Opening the web socket.
-            // var ws = new WebSocket("ws://colossus.gb.nrao.edu:" + port + "/websocket");
             var ws = new WebSocket("ws://localhost:" + port + "/websocket");
 
             var me = this;
@@ -41,17 +42,15 @@ define([
                     console.log('Closing WebSocket.');
                     ws.close();
                 } else {
-                    var data = eval(evt.data);
-                    console.log('received message', data[0], 'length',data[1].length);
-//                     console.log('data', data[1]);
-                    me.pointWidth = me.width / data[1].length;
-//                     console.log('pointWidth',me.pointWidth);
-                    me.updateDisplay(data[1]);
-                    // Debug log to see if we were getting data to the browser.
-
-                    // Send the id of the data back to the server for timing.
-                    // This could be removed later.
-                    ws.send(data[0]);
+                    var msg = eval(evt.data);
+                    var data = msg[0];
+                    me.colormin = msg[1];
+                    me.colormax = msg[2];
+                    console.log('color min:',me.colormin);
+                    console.log('color max:',me.colormax);
+                    console.log('received message',data.length);
+                    me.pointWidth = me.width / data.length;
+                    me.updateDisplay(data);
                 }
             };
         },
@@ -78,7 +77,7 @@ define([
                 context.lineTo(e.clientX-me.horzOffset, me.height);
                 context.moveTo(0, e.clientY-me.vertOffset);
                 context.lineTo(me.width, e.clientY-me.vertOffset);
-                context.strokeStyle = 'red';  // make the crosshairs red
+                context.strokeStyle = 'yellow';  // make the crosshairs red
                 context.stroke();
                 me.updateNeighboringPlots(e.clientX-me.horzOffset, e.clientY-me.vertOffset);
             });
@@ -191,13 +190,14 @@ define([
     
         getFillColor: function(value){
             // Dumb coloring algorithm. ;)
-            var colors = ['red',
-                          'yellow',
-                          'blue',
-                          'green',
-                          'black',
-                          'purple'];
-            return colors[value-5];
+                var colors = ['purple',
+                              'red',
+                              'blue',
+                              'green',
+                              'pink',
+                              'black'];
+                var colorIdx =  Math.floor(((value-this.colormin)/(this.colormax-this.colormin))*255);
+                return 'rgb('+colorIdx+',0,0)';
         },
 
         addData: function(data){
