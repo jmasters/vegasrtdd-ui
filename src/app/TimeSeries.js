@@ -32,7 +32,7 @@ define([
                     this.ts_data.unshift(data[channel]);
                 }
 
-                console.log('time series data',this.ts_data);
+                // console.log('time series data',this.ts_data);
                 if (typeof(this.chart) == 'undefined') {
                     console.log('chart undefined');
                 } else {

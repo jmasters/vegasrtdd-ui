@@ -31,7 +31,7 @@ define([
             var port = 8889;
 
             // Opening the web socket.
-            var ws = new WebSocket("ws://localhost:" + port + "/websocket");
+            var ws = new WebSocket("ws://colossus.gb.nrao.edu:" + port + "/websocket");
 
             var me = this;
 
