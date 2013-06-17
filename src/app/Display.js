@@ -31,16 +31,16 @@ define([
             var port = 8889;
 
             // Opening the web socket.
-            var ws = new WebSocket("ws://colossus.gb.nrao.edu:" + port + "/websocket");
+            this.ws = new WebSocket("ws://colossus.gb.nrao.edu:" + port + "/websocket");
 
             var me = this;
 
             // The following function handles data sent from the write_message
             // server code in websocket.py
-            ws.onmessage = function (evt) {
+            this.ws.onmessage = function (evt) {
                 if (evt.data == 'close'){
                     console.log('Closing WebSocket.');
-                    ws.close();
+                    this.ws.close();
                 } else {
                     var msg = eval(evt.data);
                     var data = msg[0];
@@ -58,7 +58,13 @@ define([
         initListeners: function() {
             // Sets listeners associated event handlers.
             var me = this;
-            
+           
+            query('#submitBank').on('click', function(e){
+                var bank = query('#controls input:checked')[0].value;
+                console.log('BANK = ', bank);
+                me.ws.send(bank);
+            }); 
+
             // Registering click event for the plot.  Basically,
             // on click, get the position of the click and draw cross
             // hairs to highlight the row and column clicked.  Then update
