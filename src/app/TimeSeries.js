@@ -51,15 +51,6 @@ define([
             // Flush buffer first.
             this.empty();
 
-            // If the select channel is out of range (i.e. the user
-            // clicked outside of the waterfall plot), plot the empty
-            // buffer.
-//             if (channel > spectraldata[0].length || channel < 0) {
-//                 this.chart.updateSeries("y", this.ts_data);
-//                 this.chart.render();
-//                 return;
-//             }
-
             // Scan the given spectral data (which is the buffer from
             // Display) and add the data from the selected channel to
             // our internal buffer.

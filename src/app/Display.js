@@ -1,9 +1,11 @@
 define([
     'dojo/_base/declare',
+    'dojo/_base/array',
+    'dojo/dom-attr',
     'dojo/query',
     'app/SpectrumPlot',
     'app/TimeSeries',
-], function(declare, query, SpectrumPlot, TimeSeries) {
+], function(declare, array, domAttr, query, SpectrumPlot, TimeSeries) {
     return declare(null, {
         constructor: function(){
             this.spectrumPlot  = new SpectrumPlot();
@@ -23,6 +25,7 @@ define([
             this.secondaryCanvas = "#waterfall2";
             this.colormax = null;
             this.colormin = null;
+            this.updateID = null;
 
             this.drawAxis();
             this.initListeners();
@@ -43,30 +46,72 @@ define([
                     this.ws.close();
                 } else {
                     var msg = eval(evt.data);
-                    var data = msg[0];
-                    me.colormin = msg[1];
-                    me.colormax = msg[2];
-                    console.log('color min:',me.colormin);
-                    console.log('color max:',me.colormax);
-                    console.log('received message',data.length);
-                    me.pointWidth = me.width / data.length;
-                    me.updateDisplay(data);
+                    console.log(msg[0]);
+                    if ('bank_config' == msg[0]) {
+                        var bank_arr = msg[1];
+			array.forEach(bank_arr, function(bank, index) {
+			    console.log('bank', bank);
+                            domAttr.has('bank'+bank, 'disabled');
+                            console.log('enabling bank',bank);
+                            domAttr.remove('bank'+bank, 'disabled');
+                            domAttr.remove('submitBank', 'disabled');
+                            domAttr.set('bank'+bank+'-txt', 'style', {'color': 'black', 'fontWeight': 'bold'});
+			});
+                        domAttr.set('bank'+bank_arr[0], 'checked', 'checked');
+
+                        query('#header')[0].innerHTML = 'Bank ' + bank_arr[0];
+
+                        console.log('----------------------------');
+
+                        // send msg to server with default bank to display
+                        
+                        // request data every 1 second
+                        me.updateID = setInterval( function () {
+				me.ws.send(bank_arr[0]);
+			    }, 1000 ); // 1000 milliseconds
+
+                    } else if ('data' == msg[0]) {
+                        var data = msg[1];
+                        me.colormin = msg[2];
+                        me.colormax = msg[3];
+                        console.log('color min:',me.colormin);
+                        console.log('color max:',me.colormax);
+                        console.log('received message',data.length);
+                        me.pointWidth = me.width / data.length;
+                        me.updateDisplay(data);
+                    } else {
+                        console.log('ERROR: do not understand message', msg);
+                    }
                 }
             };
         },
-        
+
+	// Sets listeners and associated event handlers.
         initListeners: function() {
-            // Sets listeners associated event handlers.
-            var me = this;
-           
+	    var me = this;  // convention for local use of self
+
+            // listen for Submit button click
             query('#submitBank').on('click', function(e){
-                var bank = query('#controls input:checked')[0].value;
-                console.log('BANK = ', bank);
-                me.ws.send(bank);
+
+	       // clear previous interval data update
+	       clearTimeout(me.updateID);
+
+               me.resetDisplay();  // clear the plot display
+
+               // get value of new bank (radio button selection)
+               var bank = query('#controls input:checked')[0].value;
+               console.log('BANK = ', bank);
+               // update the display header
+               query('#header')[0].innerHTML = 'Bank ' + bank;
+
+               // request data every 1 second for new bank
+               me.updateID = setInterval( function () {
+			me.ws.send(bank);
+		    }, 1000 ); // 1000 milliseconds
             }); 
 
-            // Registering click event for the plot.  Basically,
-            // on click, get the position of the click and draw cross
+            // Registering click event for the plot.
+            // On click, get the position of the click and draw cross
             // hairs to highlight the row and column clicked.  Then update
             // the timeseries and spectral plots to show the selected row
             // and column (channel).
@@ -75,7 +120,6 @@ define([
                 var canvas = query("#axis")[0];
                 var context = canvas.getContext("2d");
                 me.clearCanvas("#axis");
-//                 me.drawAxis();
 
                 // draw crosshairs
                 context.beginPath();
@@ -89,17 +133,20 @@ define([
             });
         },
 
+	// call after click on plot for crosshairs
         updateNeighboringPlots: function(x, y) {
-            // Converting the (x, y) position for the mouse click to the right indices.
+
+            // Convert the (x, y) position for the mouse click to the right indices.
             this.channel_index = Math.floor(x / this.pointWidth);
             this.spectrum_index = Math.floor(y / this.pointHeight);
+
             // Useful log for debugging
-//             console.log("spactra at: " + this.spectrum_index + "[" + this.channel_index + "]");
+            // console.log("spactra at: " + this.spectrum_index + "[" + this.channel_index + "]");
 
             // If we clicked where there is data plot, tell the spectra plot to plot that
             // row.  Otherwise, we plot clear the plot.
             if (this.spectrum_index < this.specData.length && this.spectrum_index >= 0) {
-//                 console.log('updating specplot with ',this.specData[this.spectrum_index]);
+            // console.log('updating specplot with ',this.specData[this.spectrum_index]);
                 this.spectrumPlot.update(this.specData[this.spectrum_index]);
             } else {
                 this.spectrumPlot.update([]);
@@ -115,9 +162,6 @@ define([
             
         clearCanvas: function(id){
             var canvas = query(id)[0];
-            //var context = canvas.getContext("2d");
-            //context.clearRect(0, 0, c.width, c.height);
-            // clearRect doesn't always work for some reason.  Found this trick.
             canvas.width = canvas.width;
             canvas.height = canvas.height;
         },
@@ -213,10 +257,10 @@ define([
                 this.specData.pop();
             }
 
-            // A slightly different question.  If we have plotted the
-            // max amount of data, swap the canvases and reset the
-            // count.
+            // If we have plotted the max amount of data, swap the
+            // canvases and reset the count.
             if (this.rowCounter == this.nSpectra) {
+
                 // Also, if we've been plotting on the second cavnas,
                 // clear the secondary before the swap.
                 if (this.primaryCanvas == '#waterfall2'){
@@ -241,6 +285,27 @@ define([
             this.drawDisplay(data);
         },
 
+	// when we want to switch to displaying a different bank we
+	// need to clear the plot and axes
+	resetDisplay: function() {
+
+	    // clear each of the two plot canvases
+            this.clearCanvas(this.primaryCanvas);
+            this.clearCanvas(this.secondaryCanvas);
+
+            // get each of the two plot canvases
+            var canvas = query(this.primaryCanvas)[0];
+            var canvas2 = query(this.secondaryCanvas)[0];
+
+            // reset the canvas top positions
+            canvas.style.top = "-500px";
+            canvas2.style.top = "50px";
+
+	    this.timeseries.empty();
+	    delete this.specData;
+            this.specData      = new Array(); // a buffer of all data
+	    this.timeseries.plot(this.specData, 0);
+        },
     });
 });
 
