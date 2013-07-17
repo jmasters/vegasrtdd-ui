@@ -23,9 +23,9 @@ define([
             this.timeseries    = new TimeSeries(this.nSpectra);
             this.primaryCanvas = "#waterfall1";
             this.secondaryCanvas = "#waterfall2";
-            this.colormax = null;
-            this.colormin = null;
-            this.updateID = null;
+            this.colormax = null;  // for color normalization
+            this.colormin = null;  // for color normalization
+            this.updateID = null;  // for update interval
 
             this.drawAxis();
             this.initListeners();
@@ -34,7 +34,8 @@ define([
             var port = 8889;
 
             // Opening the web socket.
-            this.ws = new WebSocket("ws://colossus.gb.nrao.edu:" + port + "/websocket");
+            //this.ws = new WebSocket("ws://colossus.gb.nrao.edu:" + port + "/websocket");
+            this.ws = new WebSocket("ws://localhost:" + port + "/websocket");
 
             var me = this;
 
@@ -106,10 +107,26 @@ define([
 
                // request data every 1 second for new bank
                me.updateID = setInterval( function () {
-			me.ws.send(bank);
-		    }, 1000 ); // 1000 milliseconds
+            			me.ws.send(bank);
+         		     }, 1000 ); // 1000 milliseconds
             }); 
 
+            // listen for Freeze button click
+            query('#submitFreeze').on('click', function(e){
+              var frzVal = document.getElementById("submitFreeze").value;
+              if (frzVal == "Freeze") {
+                clearTimeout(me.updateID);
+                document.getElementById("submitFreeze").value = "Unfreeze";
+              } else {
+                // request data every 1 second for new bank
+                var bank = query('#controls input:checked')[0].value;
+                me.updateID = setInterval( function () {
+            	  me.ws.send(bank);
+         	}, 1000 ); // 1000 milliseconds
+                document.getElementById("submitFreeze").value = "Freeze";
+              }
+            });
+ 
             // Registering click event for the plot.
             // On click, get the position of the click and draw cross
             // hairs to highlight the row and column clicked.  Then update
@@ -239,15 +256,8 @@ define([
         },
     
         getFillColor: function(value){
-            // Dumb coloring algorithm. ;)
-                var colors = ['purple',
-                              'red',
-                              'blue',
-                              'green',
-                              'pink',
-                              'black'];
-                var colorIdx =  Math.floor(((value-this.colormin)/(this.colormax-this.colormin))*255);
-                return 'rgb('+colorIdx+',0,0)';
+            var colorIdx =  Math.floor(((value-this.colormin)/(this.colormax-this.colormin))*255);
+            return 'rgb('+colorIdx+',0,0)';
         },
 
         addData: function(data){
