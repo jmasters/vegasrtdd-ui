@@ -9,7 +9,17 @@ define([
     return declare(null, {
         constructor: function(){
             this.spectrumPlot  = new SpectrumPlot();
-            this.specData      = new Array(), // a buffer of all data
+            this.currentBank = null;
+            this.specData = {
+              A: new Array(),
+              B: new Array(),
+              C: new Array(),
+              D: new Array(),
+              E: new Array(),
+              F: new Array(),
+              G: new Array(),
+              H: new Array()
+            };
             this.spectrum_index = 0;
             this.channel_index = 0;
             this.width         = 512;
@@ -52,20 +62,21 @@ define([
                         var bank_arr = msg[1];
 			array.forEach(bank_arr, function(bank, index) {
 			    console.log('bank', bank);
-                            domAttr.has('bank'+bank, 'disabled');
+                            domAttr.has('bank' + bank, 'disabled');
+                          
                             console.log('enabling bank',bank);
-                            domAttr.remove('bank'+bank, 'disabled');
+                          
+                            domAttr.remove('bank' + bank, 'disabled');
                             domAttr.remove('submitBank', 'disabled');
-                            domAttr.set('bank'+bank+'-txt', 'style', {'color': 'black', 'fontWeight': 'bold'});
+                            domAttr.set('bank' + bank + '-txt', 'style', {'color': 'black', 'fontWeight': 'bold'});
 			});
-                        domAttr.set('bank'+bank_arr[0], 'checked', 'checked');
 
-                        query('#header')[0].innerHTML = 'Bank ' + bank_arr[0];
+                        me.currentBank = bank_arr[0];
+                        domAttr.set('bank' + me.currentBank, 'checked', 'checked');
 
-                        console.log('----------------------------');
+                        query('#header')[0].innerHTML = 'Bank ' + me.currentBank;
 
                         // send msg to server with default bank to display
-                        
                         // request data every 1 second
                         me.updateID = setInterval( function () {
 				me.ws.send(bank_arr[0]);
@@ -79,7 +90,7 @@ define([
                         console.log('color max:',me.colormax);
                         console.log('received message',data.length);
                         me.pointWidth = me.width / data.length;
-                        me.updateDisplay(data);
+                        me.updateDisplay(me.currentBank, data);
                     } else {
                         console.log('ERROR: do not understand message', msg);
                     }
@@ -94,20 +105,25 @@ define([
             // listen for Submit button click
             query('#submitBank').on('click', function(e){
 
+               var frzVal = document.getElementById("submitFreeze").value;
+               if (frzVal == "Unfreeze") {
+                 document.getElementById("submitFreeze").value = "Freeze";
+               }
+
 	       // clear previous interval data update
 	       clearTimeout(me.updateID);
 
                me.resetDisplay();  // clear the plot display
 
                // get value of new bank (radio button selection)
-               var bank = query('#controls input:checked')[0].value;
-               console.log('BANK = ', bank);
+               me.currentBank = query('#controls input:checked')[0].value;
+               console.log('BANK = ', me.currentBank);
                // update the display header
-               query('#header')[0].innerHTML = 'Bank ' + bank;
+               query('#header')[0].innerHTML = 'Bank ' + me.currentBank;
 
                // request data every 1 second for new bank
                me.updateID = setInterval( function () {
-            			me.ws.send(bank);
+            			me.ws.send(me.currentBank);
          		     }, 1000 ); // 1000 milliseconds
             }); 
 
@@ -119,9 +135,8 @@ define([
                 document.getElementById("submitFreeze").value = "Unfreeze";
               } else {
                 // request data every 1 second for new bank
-                var bank = query('#controls input:checked')[0].value;
                 me.updateID = setInterval( function () {
-            	  me.ws.send(bank);
+            	  me.ws.send(me.currentBank);
          	}, 1000 ); // 1000 milliseconds
                 document.getElementById("submitFreeze").value = "Freeze";
               }
@@ -162,9 +177,9 @@ define([
 
             // If we clicked where there is data plot, tell the spectra plot to plot that
             // row.  Otherwise, we plot clear the plot.
-            if (this.spectrum_index < this.specData.length && this.spectrum_index >= 0) {
-            // console.log('updating specplot with ',this.specData[this.spectrum_index]);
-                this.spectrumPlot.update(this.specData[this.spectrum_index]);
+            if (this.spectrum_index < this.specData[this.currentBank].length && this.spectrum_index >= 0) {
+            // console.log('updating specplot with ',this.specData[this.currentBank][this.spectrum_index]);
+                this.spectrumPlot.update(this.specData[this.currentBank][this.spectrum_index]);
             } else {
                 this.spectrumPlot.update([]);
             }
@@ -172,9 +187,9 @@ define([
             // The timeseries object keeps a running buffer of all the values plotted.
             // When a new column is selected that buffer needs to be flushed and
             // updated with all the values for the select channel.
-            this.timeseries.newChannelBuffer(this.specData, this.channel_index);
+            this.timeseries.newChannelBuffer(this.specData[this.currentBank], this.channel_index);
             // Just plotting the timeseries here.
-            this.timeseries.plot(this.specData[this.specData.length - 1], this.channel_index);
+            this.timeseries.plot(this.specData[this.currentBank][this.specData[this.currentBank].length - 1], this.channel_index);
         },
             
         clearCanvas: function(id){
@@ -228,13 +243,13 @@ define([
             context2.clearRect(0, clipPos, this.width, (this.pointHeight * this.rowCounter));
 
             // Update the spectra and timeseries plots with the new data we just got.
-            if (this.spectrum_index < this.specData.length) {
-                this.spectrumPlot.update(this.specData[this.spectrum_index]);
+            if (this.spectrum_index < this.specData[this.currentBank].length) {
+                this.spectrumPlot.update(this.specData[this.currentBank][this.spectrum_index]);
             }
             // The timeseries object keeps a running buffer of all the values plotted.
             // When a new column is selected that buffer needs to be flushed and
             // updated with all the values for the select channel.
-            this.timeseries.newChannelBuffer(this.specData, this.channel_index);
+            this.timeseries.newChannelBuffer(this.specData[this.currentBank], this.channel_index);
             this.timeseries.plot(data, this.channel_index);
         },
         
@@ -260,11 +275,11 @@ define([
             return 'rgb('+colorIdx+',0,0)';
         },
 
-        addData: function(data){
+        addData: function(bank, data){
             // If we have reached the max amount of data to keep in
             // the buffer, pop off the end.
-            if (this.specData.length >= this.nSpectra){
-                this.specData.pop();
+            if (this.specData[this.currentBank].length >= this.nSpectra){
+                this.specData[this.currentBank].pop();
             }
 
             // If we have plotted the max amount of data, swap the
@@ -284,14 +299,14 @@ define([
 
             // Finally, insert the new data to the beginning of the
             // buffer.
-            this.specData.unshift(data);
+            this.specData[this.currentBank].unshift(data);
         },
 
-        updateDisplay: function(data){
+        updateDisplay: function(bank, data){
             // Utility method for tying everything together when
             // updating the display.  This method is called when we
             // get a new WS message from the server.
-            this.addData(data);
+            this.addData(bank, data);
             this.drawDisplay(data);
         },
 
@@ -312,9 +327,9 @@ define([
             canvas2.style.top = "50px";
 
 	    this.timeseries.empty();
-	    delete this.specData;
-            this.specData      = new Array(); // a buffer of all data
-	    this.timeseries.plot(this.specData, 0);
+	    delete this.specData[this.currentBank];
+            this.specData[this.currentBank] = new Array(); // a buffer of all data
+	    this.timeseries.plot(this.specData[this.currentBank], 0);
         },
     });
 });
