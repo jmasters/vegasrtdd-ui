@@ -6,6 +6,48 @@ file.
  *
  * It is highly, highly recommended that you develop your CSS using
  *Stylus: http://learnboost.github.com/stylus/.  */
-
 @import '../../dojo/resources/dojo.css';
 @import '../../dijit/themes/claro/claro.css';
+
+#header {
+    position: absolute; 
+    left: 50px; 
+    top: 10px; 
+    font-size: 20; 
+    font-weight: bold;
+}
+#timeseries {
+    position: absolute;
+    left: 432px;
+    top: 200px;
+    width: 500px;
+    height: 200px;
+    /*margin: 5px auto 0px auto;*/
+    /* Rotate div */
+    transform:rotate(90deg);
+    -ms-transform:rotate(90deg); /* Internet Explorer */
+    -moz-transform:rotate(90deg); /* Firefox */
+    -webkit-transform:rotate(90deg); /* Safari and Chrome */
+    -o-transform:rotate(90deg); /* Opera */
+    border:0px solid purple; 
+}
+#spectra {
+    position: absolute;
+    left: 50px;
+    top: 570px;
+    width: 512px;
+    height: 200px;
+    border:0px solid green;
+}
+canvas {
+    position: absolute;
+    left: 50px;
+}
+span {
+    color: grey;
+}
+input[id=^bank]  {
+    disable: true;
+    type: radio;
+}
+
