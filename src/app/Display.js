@@ -10,19 +10,20 @@ define([
   'app/SpectrumPlot',
   'app/TimeSeries',
 ], function(declare, array, domAttr, query, SpectrumPlot, TimeSeries) {
+  'use strict';  // opt-in to strict mode
   return declare(null, {
     constructor: function(){
       this.spectrumPlot  = new SpectrumPlot();
       this.currentBank = null;
       this.specData = {
-        A: new Array(),
-        B: new Array(),
-        C: new Array(),
-        D: new Array(),
-        E: new Array(),
-        F: new Array(),
-        G: new Array(),
-        H: new Array()
+        A: [], // "[]" is the same as "new Array()"
+        B: [],
+        C: [],
+        D: [],
+        E: [],
+        F: [],
+        G: [],
+        H: [],
       };
       this.spectrum_index = 0;
       this.channel_index = 0;
@@ -48,7 +49,8 @@ define([
       var port = 8889;
 
       // Opening the web socket.
-      //this.ws = new WebSocket("ws://colossus.gb.nrao.edu:" + port + "/websocket");
+      // var hostname = "colossus.gb.nrao.edu";
+      //this.ws = new WebSocket("ws://" + hostname +":" + port + "/websocket");
       this.ws = new WebSocket("ws://localhost:" + port + "/websocket");
 
       var me = this;
@@ -56,24 +58,25 @@ define([
       // The following function handles data sent from the write_message
       // server code in websocket.py
       this.ws.onmessage = function (evt) {
-        if (evt.data == 'close'){
+        if (evt.data === 'close'){
           console.log('Closing WebSocket.');
           this.ws.close();
         } else {
           var msg = eval(evt.data);
           console.log(msg[0]);
-          if ('bank_config' == msg[0]) {
+          if ('bank_config' === msg[0]) {
             var bank_arr = msg[1];
-	    array.forEach(bank_arr, function(bank, index) {
-	      console.log('bank', bank);
+            array.forEach(bank_arr, function(bank, index) {
+              console.log('bank', bank);
               domAttr.has('bank' + bank, 'disabled');
-              
+
               console.log('enabling bank',bank);
-              
+
               domAttr.remove('bank' + bank, 'disabled');
               domAttr.remove('submitBank', 'disabled');
-              domAttr.set('bank' + bank + '-txt', 'style', {'color': 'black', 'fontWeight': 'bold'});
-	    });
+              domAttr.set('bank' + bank + '-txt', 'style',
+                          {'color': 'black', 'fontWeight': 'bold'});
+            });
 
             me.currentBank = bank_arr[0];
             domAttr.set('bank' + me.currentBank, 'checked', 'checked');
@@ -83,10 +86,10 @@ define([
             // send msg to server with default bank to display
             // request data every 1 second
             me.updateID = setInterval( function () {
-	      me.ws.send(bank_arr[0]);
-	    }, 1000 ); // 1000 milliseconds
+              me.ws.send(bank_arr[0]);
+            }, 1000 ); // 1000 milliseconds
 
-          } else if ('data' == msg[0]) {
+          } else if ('data' === msg[0]) {
             var data = msg[1];
             me.colormin = msg[2];
             me.colormax = msg[3];
@@ -110,12 +113,12 @@ define([
       query('#submitBank').on('click', function(e){
 
         var frzVal = document.getElementById("submitFreeze").value;
-        if (frzVal == "Unfreeze") {
+        if (frzVal === "Unfreeze") {
           document.getElementById("submitFreeze").value = "Freeze";
         }
 
-	// clear previous interval data update
-	clearTimeout(me.updateID);
+        // clear previous interval data update
+        clearTimeout(me.updateID);
 
         me.resetDisplay();  // clear the plot display
 
@@ -129,12 +132,12 @@ define([
         me.updateID = setInterval( function () {
           me.ws.send(me.currentBank);
         }, 1000 ); // 1000 milliseconds
-      }); 
+      });
 
       // listen for Freeze button click
       query('#submitFreeze').on('click', function(e){
         var frzVal = document.getElementById("submitFreeze").value;
-        if (frzVal == "Freeze") {
+        if (frzVal === "Freeze") {
           clearTimeout(me.updateID);
           document.getElementById("submitFreeze").value = "Unfreeze";
         } else {
@@ -256,7 +259,7 @@ define([
       this.timeseries.newChannelBuffer(this.specData[this.currentBank], this.channel_index);
       this.timeseries.plot(data, this.channel_index);
     },
-    
+
     drawAxis: function() {
       // Nothing special.  Just drawing some lines for the axis.
       var canvas = query('#axis')[0];
@@ -271,9 +274,9 @@ define([
 
       context.font = "20px Arial";
       context.fillStyle = '#000000';
-      context.fillText("channels", this.width / 2.0, -10)
+      context.fillText("channels", this.width / 2.0, -10);
     },
-    
+
     getFillColor: function(value){
       var colorIdx =  Math.floor(((value-this.colormin)/(this.colormax-this.colormin))*255);
       return 'rgb('+colorIdx+',0,0)';
@@ -288,11 +291,11 @@ define([
 
       // If we have plotted the max amount of data, swap the
       // canvases and reset the count.
-      if (this.rowCounter == this.nSpectra) {
+      if (this.rowCounter === this.nSpectra) {
 
         // Also, if we've been plotting on the second cavnas,
         // clear the secondary before the swap.
-        if (this.primaryCanvas == '#waterfall2'){
+        if (this.primaryCanvas === '#waterfall2'){
           this.clearCanvas(this.secondaryCanvas);
         }
         var temp = this.primaryCanvas;
@@ -332,7 +335,7 @@ define([
 
       this.timeseries.empty();
       delete this.specData[this.currentBank];
-      this.specData[this.currentBank] = new Array(); // a buffer of all data
+      this.specData[this.currentBank] = []; // a buffer of all data
       this.timeseries.plot(this.specData[this.currentBank], 0);
     },
   });

@@ -5,7 +5,8 @@ define([
   'dojox/charting/axis2d/Default',
   'dojox/charting/plot2d/Lines'],
        function(declare, array, Chart, Default, Lines) {
-         var myfont = new String("normal normal normal 10pt Arial");
+         'use strict'; // opt-in to strict mode
+         var myfont = "normal normal normal 10pt Arial";
          return declare(null, {
            constructor: function(bufferSize) {
              // the size of the data buffer for plotting
@@ -20,8 +21,8 @@ define([
                                      titleFontColor: "blue",
                                     });
              this.chart.addPlot("default", {stroke: {color:"red", width: 1}});
-             this.chart.addAxis("x", {min: 1, 
-                                      max: bufferSize, 
+             this.chart.addAxis("x", {min: 1,
+                                      max: bufferSize,
                                       minorTicks: false});
              this.chart.addAxis("y", {vertical: true, minorTicks: false});
              this.chart.addSeries("ts", []);
@@ -40,7 +41,7 @@ define([
                }
 
                // console.log('time series data',this.ts_data);
-               if (typeof(this.chart) == 'undefined') {
+               if (typeof(this.chart) === 'undefined') {
                  console.log('chart undefined');
                } else {
                  console.log('updating timeseries');
@@ -69,10 +70,3 @@ define([
            },
          });
        });
-
-           
-                           
-
-                              
-           
-             
