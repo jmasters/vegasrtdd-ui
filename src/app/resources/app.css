@@ -46,8 +46,24 @@ canvas {
 span {
     color: grey;
 }
-input[id=^bank]  {
+input[id=^bank] {
     disable: true;
     type: radio;
+}
+#controls {
+    position: absolute;
+    left: 812px;
+    top: 20px;
+}
+#waterfall1 {
+    top: -500px;
+}
+#waterfall2 {
+    top: 50px;
+}
+#axis {
+    top: 50px;
+    z-index: 1;
+    border: 1px solid #000000;
 }
 
