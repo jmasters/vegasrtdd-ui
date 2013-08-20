@@ -29,11 +29,11 @@ define([
       this.channel_index = 0;
       this.width         = 512;
       this.height        = 500;
-      this.nSpectra      = 100; // number of spectra we show at once
+      this.nSpectra      = 300; // number of spectra we show at once
       this.pointHeight   = this.height / this.nSpectra;
       this.pointWidth    = 0;
-      this.horzOffset    = 50;
-      this.vertOffset    = 50;
+      this.horzOffset    = 150;
+      this.vertOffset    = 60;
       this.rowCounter    = 0;
       this.timeseries    = new TimeSeries(this.nSpectra);
       this.primaryCanvas = "#waterfall1";
@@ -148,7 +148,7 @@ define([
           document.getElementById("submitFreeze").value = "Freeze";
         }
       });
-      
+
       // Registering click event for the plot.
       // On click, get the position of the click and draw cross
       // hairs to highlight the row and column clicked.  Then update
@@ -162,14 +162,14 @@ define([
 
         // draw crosshairs
         context.beginPath();
-        context.moveTo(e.clientX-me.horzOffset, 0);
-        context.lineTo(e.clientX-me.horzOffset, me.height);
-        context.moveTo(0, e.clientY-me.vertOffset);
-        context.lineTo(me.width, e.clientY-me.vertOffset);
+        context.moveTo(e.clientX-me.horzOffset-1, 0);
+        context.lineTo(e.clientX-me.horzOffset-1, me.height);
+        context.moveTo(0, e.clientY-me.vertOffset-1);
+        context.lineTo(me.width, e.clientY-me.vertOffset-1);
         context.strokeStyle = 'yellow';  // make the crosshairs red
         context.stroke();
-        me.updateNeighboringPlots(e.clientX-me.horzOffset, e.clientY-me.vertOffset);
-      });
+        query('#position')[0].innerHTML = "Channel " + (e.clientX-me.horzOffset) + ", Time Interval " + (e.clientY-me.vertOffset);
+        me.updateNeighboringPlots(e.clientX-me.horzOffset-1, e.clientY-me.vertOffset-1);});
     },
 
     // call after click on plot for crosshairs
@@ -198,13 +198,13 @@ define([
       // Just plotting the timeseries here.
       this.timeseries.plot(this.specData[this.currentBank][this.specData[this.currentBank].length - 1], this.channel_index);
     },
-    
+
     clearCanvas: function(id){
       var canvas = query(id)[0];
       canvas.width = canvas.width;
       canvas.height = canvas.height;
     },
-    
+
     drawDisplay: function(data){
       // First a few words about how the waterfall plot is done.
       // In order to avoid redrawing every rectangle each time
@@ -220,14 +220,14 @@ define([
       var canvas = query(this.primaryCanvas)[0];
       var canvas2 = query(this.secondaryCanvas)[0];
       var context = canvas.getContext("2d");
-      
+
       // Calculate the height and width of each point in the
       // waterfall plot.  The height is based off the number of
       // channels and how much room we have horizontally.  The
       // width is based on a height scaling factor and how much
       // room we have vertically.
       this.pointWidth  = this.width / data.length;
-      
+
       // Given the number of rows we have plotted, what should the position be?
       this.rowCounter += 1;
       var top_pos = -Math.round(this.height-this.vertOffset-(this.pointHeight* this.rowCounter));
@@ -235,7 +235,7 @@ define([
       // Set the canvases top position accordingly.
       canvas.style.top = top_pos + "px";
       canvas2.style.top = Math.round(top_pos+this.height) + "px";
-      
+
       // Draw the new spectrum as rectangles
       for(var chan = 0; chan < data.length; chan++){
         context.fillStyle = this.getFillColor(data[chan]);
@@ -243,7 +243,7 @@ define([
                          this.height - (this.pointHeight * this.rowCounter),
                          this.pointWidth, this.pointHeight);
       }
-      
+
       // Clip the bottom of the secondary canvas
       var context2 = canvas2.getContext("2d");
       var clipPos = Math.round(canvas2.height - (this.pointHeight * this.rowCounter));

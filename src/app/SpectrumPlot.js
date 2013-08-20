@@ -12,6 +12,7 @@ define([
                               titleGap: 12,
                               titleFontColor: "blue",
                               titleFont: myfont,
+                              labelOffset: 20
                              });
       this.chart.addPlot("default", {stroke: {color:"red", width: 1}});
       this.chart.addAxis("x", {includeZero: true,

@@ -23,7 +23,10 @@ define([
              this.chart.addPlot("default", {stroke: {color:"red", width: 1}});
              this.chart.addAxis("x", {min: 1,
                                       max: bufferSize,
-                                      minorTicks: false});
+                                      minorTicks: true,
+                                      title: "seconds",
+                                      titleFont: myfont,
+                                      titleOrientation: "away" });
              this.chart.addAxis("y", {vertical: true, minorTicks: false});
              this.chart.addSeries("ts", []);
              this.chart.render(); // blank plot

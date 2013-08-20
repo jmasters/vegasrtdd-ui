@@ -9,39 +9,65 @@ file.
 @import '../../dojo/resources/dojo.css';
 @import '../../dijit/themes/claro/claro.css';
 
-#header {
-    position: absolute; 
-    left: 50px; 
-    top: 10px; 
-    font-size: 20; 
-    font-weight: bold;
-}
-#timeseries {
-    position: absolute;
-    left: 432px;
-    top: 200px;
-    width: 500px;
-    height: 200px;
-    /*margin: 5px auto 0px auto;*/
-    /* Rotate div */
+.rotate-clockwise {
     transform:rotate(90deg);
     -ms-transform:rotate(90deg); /* Internet Explorer */
     -moz-transform:rotate(90deg); /* Firefox */
     -webkit-transform:rotate(90deg); /* Safari and Chrome */
     -o-transform:rotate(90deg); /* Opera */
+}
+.rotate-cclockwise {
+    transform:rotate(-90deg);
+    -ms-transform:rotate(-90deg); /* Internet Explorer */
+    -moz-transform:rotate(-90deg); /* Firefox */
+    -webkit-transform:rotate(-90deg); /* Safari and Chrome */
+    -o-transform:rotate(-90deg); /* Opera */
+}
+#header {
+    position: absolute; 
+    left: 150px; 
+    top: 10px; 
+    font-size: 20; 
+    font-weight: bold;
+}
+#position {
+    position: absolute; 
+    left: 250px; 
+    top: 10px; 
+    font-size: 15; 
+}
+#spec-ylabel {
+    position: absolute; 
+    left: 60; 
+    top: 675; 
+    font-size: 12; 
+}
+#left-sidebar {
+    position: absolute; 
+    top: 250px; 
+    left: -20px;
+    font-size: 20;
+    color: grey;
+}
+#timeseries {
+    position: absolute;
+    left: 580px;
+    top: 200px;
+    width: 500px;
+    height: 200px;
     border:0px solid purple; 
 }
 #spectra {
     position: absolute;
-    left: 50px;
-    top: 570px;
-    width: 512px;
+    left: 140px;
+    top: 580px;
+    width: 522px;
     height: 200px;
     border:0px solid green;
 }
 canvas {
     position: absolute;
-    left: 50px;
+    left: 150px;
 }
 span {
     color: grey;
@@ -52,17 +78,17 @@ input[id=^bank] {
 }
 #controls {
     position: absolute;
-    left: 812px;
+    left: 950px;
     top: 20px;
 }
 #waterfall1 {
-    top: -500px;
+    top: -490px;
 }
 #waterfall2 {
-    top: 50px;
+    top: 60px;
 }
 #axis {
-    top: 50px;
+    top: 60px;
     z-index: 1;
     border: 1px solid #000000;
 }
