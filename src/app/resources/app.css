@@ -92,4 +92,7 @@ input[id=^bank] {
     z-index: 1;
     border: 1px solid #000000;
 }
-
+.checkbox-grid input {
+    display: block;
+    float: right;
+}
