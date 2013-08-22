@@ -7,13 +7,12 @@ define([
   'dojo/_base/array',
   'dojo/dom-attr',
   'dojo/query',
-  'app/SpectrumPlot',
-  'app/TimeSeries',
+  'app/SpectrumPlot',  // spectrum plot below the waterfall plot
+  'app/TimeSeries',    // time series plot next to waterfall plot
 ], function(declare, array, domAttr, query, SpectrumPlot, TimeSeries) {
   'use strict';  // opt-in to strict mode
   return declare(null, {
     constructor: function(){
-      this.spectrumPlot  = new SpectrumPlot();
       this.currentBank = null;
       this.specData = {
         A: [], // "[]" is the same as "new Array()"
@@ -25,36 +24,47 @@ define([
         G: [],
         H: [],
       };
-      this.spectrum_index = 0;
-      this.channel_index = 0;
-      this.width         = 512;
-      this.height        = 500;
-      this.nSpectra      = 300; // number of spectra we show at once
+      
+      this.width         = 512; // canvas width, in pixels
+      this.height        = 500; // canvas height, in pixels
+      this.nSpectra      = 100; // number of spectra in waterfall plot
+      
+      // datapoint height and width, in pixels
       this.pointHeight   = this.height / this.nSpectra;
-      this.pointWidth    = 0;
+      this.pointWidth    = undefined;  // calculated later
+
+      // offsets from left and top of window; needed to translate
+      // click events to positions on the waterfall plot
       this.horzOffset    = 150;
       this.vertOffset    = 60;
-      this.rowCounter    = 0;
+      
+      this.rowCounter    = 0; // keeps track of the current row position
+
       this.timeseries    = new TimeSeries(this.nSpectra);
+      // waterfall index of time series to display in the spectrum plot
+      this.channel_index = 0;
+      
+      this.spectrumPlot  = new SpectrumPlot();
+      // waterfall index of spectrum to display in the spectrum plot
+      this.spectrum_index = 0;
+
+      // these will switch as each canvas slides below the viewable area
       this.primaryCanvas = "#waterfall1";
       this.secondaryCanvas = "#waterfall2";
       this.colormax = null;  // for color normalization
       this.colormin = null;  // for color normalization
-      this.updateID = null;  // for update interval
+      this.updateID = null;  // for waterfall update interval
 
-      this.drawAxis();
+      // get ready for click events, etc.
       this.initListeners();
 
-      // Change this to your own tornado server port
+      // the tornado server port
       var port = 8889;
 
-      // Opening the web socket.
-      // var hostname = "colossus.gb.nrao.edu";
-      //this.ws = new WebSocket("ws://" + hostname +":" + port + "/websocket");
+      // Creating/opening the web socket.
       this.ws = new WebSocket("ws://localhost:" + port + "/websocket");
 
       var me = this;
-
       // The following function handles data sent from the write_message
       // server code in websocket.py
       this.ws.onmessage = function (evt) {
@@ -65,6 +75,8 @@ define([
           var msg = eval(evt.data);
           console.log(msg[0]);
           if ('bank_config' === msg[0]) {
+            // set the radio button properties depending on what banks
+            // are available
             var bank_arr = msg[1];
             array.forEach(bank_arr, function(bank, index) {
               console.log('bank', bank);
@@ -258,23 +270,6 @@ define([
       // updated with all the values for the select channel.
       this.timeseries.newChannelBuffer(this.specData[this.currentBank], this.channel_index);
       this.timeseries.plot(data, this.channel_index);
-    },
-
-    drawAxis: function() {
-      // Nothing special.  Just drawing some lines for the axis.
-      var canvas = query('#axis')[0];
-      var context = canvas.getContext("2d");
-      context.beginPath();
-      context.moveTo(0,0); // upper left
-      context.lineTo(0, this.height);     // lower left
-      context.moveTo(0,0); // upper left
-      context.lineTo(this.width, 0);  // upper right
-      context.strokeStyle = 'black';
-      context.stroke();
-
-      context.font = "20px Arial";
-      context.fillStyle = '#000000';
-      context.fillText("channels", this.width / 2.0, -10);
     },
 
     getFillColor: function(value){
