@@ -30,10 +30,16 @@ file.
     font-size: 20; 
     font-weight: bold;
 }
-#position {
+#metadata {
     position: absolute; 
     left: 250px; 
     top: 10px; 
+    font-size: 15; 
+}
+#position {
+    position: absolute; 
+    left: 250px; 
+    top: 30px; 
     font-size: 15; 
 }
 #spec-ylabel {

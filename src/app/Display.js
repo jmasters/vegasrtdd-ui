@@ -62,7 +62,9 @@ define([
       var port = 8889;
 
       // Creating/opening the web socket.
-      this.ws = new WebSocket("ws://localhost:" + port + "/websocket");
+      var hostname = 'localhost';
+      hostname = 'arcturus.gb.nrao.edu'
+      this.ws = new WebSocket("ws://" + hostname + ":" + port + "/websocket");
 
       var me = this;
       // The following function handles data sent from the write_message
@@ -73,24 +75,26 @@ define([
           this.ws.close();
         } else {
           var msg = eval(evt.data);
-          console.log(msg[0]);
           if ('bank_config' === msg[0]) {
             // set the radio button properties depending on what banks
             // are available
-            var bank_arr = msg[1];
-            array.forEach(bank_arr, function(bank, index) {
+	    var possible_banks = ['A','B','C','D','E','F','G','H'];
+	    array.forEach(possible_banks, function(bank, index) {
+		    document.getElementById('bank'+bank).disabled=true;
+		});
+
+            var active_banks = msg[1];
+            array.forEach(active_banks, function(bank, index) {
               console.log('bank', bank);
-              domAttr.has('bank' + bank, 'disabled');
-
               console.log('enabling bank',bank);
+	      document.getElementById('bank'+bank).disabled=false;
 
-              domAttr.remove('bank' + bank, 'disabled');
               domAttr.remove('submitBank', 'disabled');
               domAttr.set('bank' + bank + '-txt', 'style',
                           {'color': 'black', 'fontWeight': 'bold'});
             });
 
-            me.currentBank = bank_arr[0];
+            me.currentBank = active_banks[0];
             domAttr.set('bank' + me.currentBank, 'checked', 'checked');
 
             query('#header')[0].innerHTML = 'Bank ' + me.currentBank;
@@ -98,18 +102,30 @@ define([
             // send msg to server with default bank to display
             // request data every 1 second
             me.updateID = setInterval( function () {
-              me.ws.send(bank_arr[0]);
+              me.ws.send(active_banks[0]);
             }, 1000 ); // 1000 milliseconds
 
           } else if ('data' === msg[0]) {
-            var data = msg[1];
-            me.colormin = msg[2];
-            me.colormax = msg[3];
-            console.log('color min:',me.colormin);
-            console.log('color max:',me.colormax);
-            console.log('received message',data.length);
-            me.pointWidth = me.width / data.length;
-            me.updateDisplay(me.currentBank, data);
+	      var bank = msg[1];
+	      var project = msg[2];
+	      var scan = msg[3];
+	      var state = msg[4];
+	      var integration = msg[5];
+	      console.log('bank',bank);
+	      console.log('project',project);
+	      console.log('scan',scan);
+	      console.log('state',state);
+	      query('#metadata')[0].innerHTML = 'Project id:  ' + project + ',   Scan:  ' + scan + ',  Integration:  ' + integration;
+	      var data = msg[6];
+	      me.colormin = msg[7];
+	      me.colormax = msg[8];
+	      console.log('color min:',me.colormin);
+	      console.log('color max:',me.colormax);
+	      console.log('received message',data.length);
+	      me.pointWidth = me.width / data.length;
+	      me.updateDisplay(me.currentBank, data);
+	  } else if ('error' === msg[0]) {
+	      query('#metadata')[0].innerHTML = 'Data Unavailable';
           } else {
             console.log('ERROR: do not understand message', msg);
           }
