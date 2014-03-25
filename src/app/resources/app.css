@@ -23,82 +23,100 @@ file.
     -webkit-transform:rotate(-90deg); /* Safari and Chrome */
     -o-transform:rotate(-90deg); /* Opera */
 }
+#tabs {
+    border: none;
+}
 #header {
-    position: absolute; 
-    left: 150px; 
-    top: 10px; 
+    position: absolute;
+    left: 30;
+    top: 55;
     font-size: 20; 
-    font-weight: bold;
+    font-weight: normal;
+}
+#crosshair-position {
+    position: absolute;
+    left: 205;
+    top: 70;
+    font-size: 15; 
 }
 #metadata {
-    position: absolute; 
-    left: 250px; 
-    top: 10px; 
+    position: absolute;
+    left: 205;
+    top: 53;
     font-size: 15; 
 }
-#position {
-    position: absolute; 
-    left: 250px; 
-    top: 30px; 
-    font-size: 15; 
-}
-#spec-ylabel {
-    position: absolute; 
-    left: 60; 
-    top: 675; 
-    font-size: 12; 
+#bank-choice {
+    position: absolute;
+    left: 30;
+    top: 100;
 }
 #left-sidebar {
-    position: absolute; 
-    top: 250px; 
-    left: -20px;
+    position: absolute;
     font-size: 20;
     color: grey;
+    left: 30;
+    top: 15;
 }
 #timeseries {
     position: absolute;
-    left: 580px;
-    top: 200px;
     width: 500px;
     height: 200px;
-    border:0px solid purple; 
+    top: 300px;
+    left: 410px;
+    border: 0px solid purple; 
 }
-#spectra {
+#waterfall-spectrum {
     position: absolute;
-    left: 140px;
-    top: 580px;
     width: 522px;
     height: 200px;
-    border:0px solid green;
+    border: 0px solid green;
 }
-canvas {
+.spectrum {
     position: absolute;
-    left: 150px;
+    width: 1024;
+    height: 200;
+    border: 0px solid green;
+    top: 900;
+    left: 30;
 }
+#goto-spectra {
+    position: absolute;
+    top: 40;
+    left: 570;
+}
+#spectrum-1 { top: 900; }
+#spectrum-2 { top: 1100; }
+#spectrum-3 { top: 1300; }
+#spectrum-4 { top: 1500; }
+#spectrum-5 { top: 1700; }
+#spectrum-6 { top: 1900; }
+#spectrum-7 { top: 2100; }
+#spectrum-8 { top: 2300; }
 span {
     color: grey;
 }
-input[id=^bank] {
-    disable: true;
-    type: radio;
-}
-#controls {
-    position: absolute;
-    left: 950px;
-    top: 20px;
-}
-#waterfall1 {
-    top: -490px;
-}
-#waterfall2 {
-    top: 60px;
-}
 #axis {
-    top: 60px;
     z-index: 1;
+    position: absolute;
+    top: 150;
+    width: 512px;
+    height: 500px;
     border: 1px solid #000000;
+    left: 30;
 }
-.checkbox-grid input {
-    display: block;
-    float: right;
+canvas {
+    position: absolute;
+    left: 30;
+}
+#waterfallA {
+    z-index: -1;
+    top: -350px;
+    border: 0px solid blue;
+    left: 30;
+}
+#waterfallB {
+    z-index: -1;
+    top: 150px;
+    border: 0px solid orange;
+    left: 30;
 }
