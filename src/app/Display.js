@@ -103,9 +103,9 @@ function Display() {
             console.log('updating spectrum plot');
             var min = this.getMin(data);
             var max = this.getMax(data);
-            this.drawSpectrum(bank, data, min, max);
+            this.drawSpectrum(bank, data);
         } else {
-            this.drawSpectrum(null, null, null, null);
+            this.drawSpectrum(null, null);
         }
 
         if (this.channel_index < this.specData[this.currentBank][0].length && this.channel_index >= 0) {
@@ -193,8 +193,8 @@ function Display() {
             },
             yAxis: {
                 type: 'logarithmic',
-                min: min,
-                max: max,
+              //  min: min,
+                //max: max,
                 title: {
                     text: null
                 },
@@ -202,52 +202,30 @@ function Display() {
         });
     };
 
-    this.drawSpectrum = function (bank, data, min, max) {
+    this.drawSpectrum = function (bank, data) {
+        var min = this.getMin(data);
+        var max = this.getMax(data);
 
-	var specoptions = {
-            chart: { animation: false },
-            legend: { enabled: false },
-            credits: { enabled: false },
-            series: [{
-                name: 'amplitude',
-                marker: { enabled: false },
-                animation: false,
-	    }],
-            tooltip: { enabled: false },
-            plotOptions: {
-                series: {
-                    states: { hover: { enabled: false } },
-		    lineWidth: 1
-                }
-            },
-            yAxis: {
-                type: 'logarithmic',
-                min: min,
-                max: max,
-                title: { text: null },
-            },
-        };
-        $("#waterfall-spectrum").highcharts(specoptions);
+        $("#waterfall-spectrum").highcharts(me.specoptions);
 
 	var wfspec = $('#waterfall-spectrum').highcharts();
 	wfspec.series[0].setData(data);
 	wfspec.setTitle({text: 'Spectrometer '+bank});
-
-	me.drawSpec('1', 'A', data, specoptions);
-	me.drawSpec('2', 'B', data, specoptions);
-	me.drawSpec('3', 'C', data, specoptions);
-	me.drawSpec('4', 'D', data, specoptions);
-	me.drawSpec('5', 'E', data, specoptions);
-	me.drawSpec('6', 'F', data, specoptions);
-	me.drawSpec('7', 'G', data, specoptions);
-	me.drawSpec('8', 'H', data, specoptions);
+//	wfspec.yAxis[0].options.min = min;
+//	wfspec.yAxis[0].options.max = max;
     };
 
-    this.drawSpec = function(number, bank, data, specoptions) {
-        $("#spectrum-"+number).highcharts(specoptions);
+    this.drawSpec = function(number, bank, data) {
+        var min = this.getMin(data);
+        var max = this.getMax(data);
+        $("#spectrum-"+number).highcharts(me.specoptions);
 	var specchart = $('#spectrum-'+number).highcharts();
 	specchart.series[0].setData(data);
 	specchart.setTitle({text: 'Spectrometer '+bank});
+//	specchart.yAxis[0].options.min = min;
+//	specchart.yAxis[0].options.max = max;
+
+
     };
 
     this.startRequestingData = function (bank) {
@@ -255,7 +233,7 @@ function Display() {
         var me = this; // convention for local use of self
         me.updateId = setInterval(function () {
             me.ws.send(bank);
-        }, 1000); // 1000 milliseconds == 1 second
+        }, 4000); // 1000 milliseconds == 1 second
 	console.log('update id: ' + me.updateId); // debug
     };
 
@@ -288,7 +266,7 @@ function Display() {
 
         // Draw the new spectrum as rectangles
         for (var chan = 0; chan < data.length; chan++) {
-            context.fillStyle = this.getFillColor(Math.log10(data[chan]));
+            context.fillStyle = this.getFillColor(Math.log(data[chan]));
             context.fillRect(this.pointWidth * chan,
             this.canvasHeight - (this.pointHeight * this.rowCounter),
             this.pointWidth, this.pointHeight);
@@ -310,11 +288,6 @@ function Display() {
 
     this.canvasWidth = $("#axis").width(); // canvas width, in pixels
     this.canvasHeight = $("#axis").height(); // canvas height, in pixels
-
-    // enable jquery-ui tabs and activate the first
-//    $("#tabs").tabs({
-//        active: 0
-//    });
 
     // make the bank radio button choices a jquery-ui buttonset
     $("#bank-choice").buttonset();
@@ -359,6 +332,29 @@ function Display() {
     this.crosshairX = 0; // default to channel 0
     this.crosshairY = 0; // default to most recent spectrum
 
+    // highcharts display options object
+    this.specoptions =  {
+        chart: { animation: false },
+        legend: { enabled: false },
+        credits: { enabled: false },
+        series: [{
+            name: 'amplitude',
+            marker: { enabled: false },
+            animation: false,
+	}],
+        tooltip: { enabled: false },
+        plotOptions: {
+            series: {
+                states: { hover: { enabled: false } },
+		lineWidth: 1
+            }
+        },
+        yAxis: {
+            type: 'logarithmic',
+            title: { text: null },
+        },
+    };
+
     // initialize event listeners
     this.initListeners();
 };
@@ -399,18 +395,27 @@ realtimeDisplay.ws.onmessage = function (evt) {
 	    me.startRequestingData(me.currentBank);
 
         } else if ('data' === msg[0]) {
-            var bank = msg[1][0][0];
-            var project = msg[1][0][1];
-            var scan = msg[1][0][2];
-            var state = msg[1][0][3];
-            var integration = msg[1][0][4];
-            var data = msg[1][0][5];
+	    var BANKNUM = {'A':0, 'B':1, 'C':2, 'D':3,
+			    'E':4, 'F':5, 'G':6, 'H':7};
+
+            var bank = msg[1];
+
+	    var metadata = msg[2];
+            var project = metadata[0];
+            var scan = metadata[1]; 
+            var state = metadata[2];
+            var integration = metadata[3]; 
+
+	    var cmin = msg[3][0];
+	    var cmax = msg[3][1];
+
+            var data = msg[4];
 
 	    // display some metadata on screen
 	    $('#header').html('Spectrometer ' + bank);
             $('#metadata').html('Project id: ' + project + ', Scan: ' + scan + ', Int: ' + integration);
-            me.colormin = Math.log10(msg[1][0][6]);
-            me.colormax = Math.log10(msg[1][0][7]);
+            me.colormin = Math.log(cmin);
+            me.colormax = Math.log(cmax);
 
 	    // debug info
             console.log('bank', bank);
@@ -419,14 +424,23 @@ realtimeDisplay.ws.onmessage = function (evt) {
             console.log('state', state);
             console.log('color min:', me.colormin);
             console.log('color max:', me.colormax);
-            console.log('length of data:', data.length);
+            console.log('length of data:', data[BANKNUM[bank]].length);
 
             me.currentBank = bank;
 
-            me.pointWidth = me.canvasWidth / data.length;
-            me.addData(me.currentBank, data);
-            me.drawDisplay(data);
+            me.pointWidth = me.canvasWidth / data[BANKNUM[bank]].length;
+            me.addData(me.currentBank, data[BANKNUM[bank]]);
+            me.drawDisplay(data[BANKNUM[bank]]);
             me.updateNeighboringPlots(me.currentBank, me.crosshairX, me.crosshairY);
+	    me.drawSpec('1', 'A', data[BANKNUM['A']]);
+	    me.drawSpec('2', 'B', data[BANKNUM['B']]);
+	    me.drawSpec('3', 'C', data[BANKNUM['C']]);
+	    me.drawSpec('4', 'D', data[BANKNUM['D']]);
+	    me.drawSpec('5', 'E', data[BANKNUM['E']]);
+	    me.drawSpec('6', 'F', data[BANKNUM['F']]);
+	    me.drawSpec('7', 'G', data[BANKNUM['G']]);
+	    me.drawSpec('8', 'H', data[BANKNUM['H']]);
+
         } else if ('error' === msg[0]) {
 	    // stop requesting data
             clearTimeout(me.updateId);
