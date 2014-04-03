@@ -233,7 +233,7 @@ function Display() {
         var me = this; // convention for local use of self
         me.updateId = setInterval(function () {
             me.ws.send(bank);
-        }, 4000); // 1000 milliseconds == 1 second
+        }, 1000); // 1000 milliseconds == 1 second
 	console.log('update id: ' + me.updateId); // debug
     };
 
@@ -367,11 +367,14 @@ var realtimeDisplay = new Display();
 // Open the web socket to the data source, which is the tornado server that
 // that is reading from the streaming manager(s)
 var hostname = 'arcturus.gb.nrao.edu'
-var port = 8889;
+var port = 8888;
 realtimeDisplay.ws = new WebSocket("ws://" + hostname + ":" + port + "/websocket");
+realtimeDisplay.startRequestingData('A');
 
 // Handle data sent from the write_message server code in vdd_stream_socket.py
 var me = realtimeDisplay;
+
+
 realtimeDisplay.ws.onmessage = function (evt) {
     if (evt.data === 'close') {
         console.log('Closing WebSocket.');
@@ -405,6 +408,7 @@ realtimeDisplay.ws.onmessage = function (evt) {
             var scan = metadata[1]; 
             var state = metadata[2];
             var integration = metadata[3]; 
+	    var update_waterfall = metadata[4];
 
 	    var cmin = msg[3][0];
 	    var cmax = msg[3][1];
@@ -428,10 +432,14 @@ realtimeDisplay.ws.onmessage = function (evt) {
 
             me.currentBank = bank;
 
-            me.pointWidth = me.canvasWidth / data[BANKNUM[bank]].length;
-            me.addData(me.currentBank, data[BANKNUM[bank]]);
-            me.drawDisplay(data[BANKNUM[bank]]);
-            me.updateNeighboringPlots(me.currentBank, me.crosshairX, me.crosshairY);
+	    if (update_waterfall == 1)
+		{
+		    me.pointWidth = me.canvasWidth / data[BANKNUM[bank]].length;
+		    me.addData(me.currentBank, data[BANKNUM[bank]]);
+		    me.drawDisplay(data[BANKNUM[bank]]);
+		    me.updateNeighboringPlots(me.currentBank, me.crosshairX, me.crosshairY);
+		}
+
 	    me.drawSpec('1', 'A', data[BANKNUM['A']]);
 	    me.drawSpec('2', 'B', data[BANKNUM['B']]);
 	    me.drawSpec('3', 'C', data[BANKNUM['C']]);
