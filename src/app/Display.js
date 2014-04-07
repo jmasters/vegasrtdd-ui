@@ -16,7 +16,7 @@ function Display() {
         // the timeseries and spectral plots to show the selected row
         // and column (channel).
 	// !!! CHANGE IDENTIFIER TO axis TO ENABLE
-        $('#axs').click(function (e) {
+        $('#axis').click(function (e) {
 
             // get click pos relative to left edge of plot
             // http://api.jquery.com/event.pageX/
@@ -94,7 +94,8 @@ function Display() {
         this.spectrum_index = Math.floor(y / this.pointHeight);
 
         // debug
-        console.log("clicked spectrum at: [" + this.spectrum_index + ", " + this.channel_index + "]");
+        console.log(" x " + x + " pointWidth " + this.pointWidth + " y " + y + " pointHeight " + this.pointHeight);
+        console.log("clicked spectrum at: [row " + this.spectrum_index + ", channel " + this.channel_index + "]");
 
         // If we clicked where there is data plot, tell the spectra plot to display that
         // row.  Otherwise, we clear the spectrum plot.
@@ -193,8 +194,6 @@ function Display() {
             },
             yAxis: {
                 type: 'logarithmic',
-              //  min: min,
-                //max: max,
                 title: {
                     text: null
                 },
@@ -211,8 +210,6 @@ function Display() {
 	var wfspec = $('#waterfall-spectrum').highcharts();
 	wfspec.series[0].setData(data);
 	wfspec.setTitle({text: 'Spectrometer '+bank});
-//	wfspec.yAxis[0].options.min = min;
-//	wfspec.yAxis[0].options.max = max;
     };
 
     this.drawSpec = function(number, bank, data) {
@@ -222,10 +219,6 @@ function Display() {
 	var specchart = $('#spectrum-'+number).highcharts();
 	specchart.series[0].setData(data);
 	specchart.setTitle({text: 'Spectrometer '+bank});
-//	specchart.yAxis[0].options.min = min;
-//	specchart.yAxis[0].options.max = max;
-
-
     };
 
     this.startRequestingData = function (bank) {
@@ -367,13 +360,12 @@ var realtimeDisplay = new Display();
 // Open the web socket to the data source, which is the tornado server that
 // that is reading from the streaming manager(s)
 var hostname = 'arcturus.gb.nrao.edu'
-var port = 8888;
+var port = 7777;
 realtimeDisplay.ws = new WebSocket("ws://" + hostname + ":" + port + "/websocket");
 realtimeDisplay.startRequestingData('A');
 
 // Handle data sent from the write_message server code in vdd_stream_socket.py
 var me = realtimeDisplay;
-
 
 realtimeDisplay.ws.onmessage = function (evt) {
     if (evt.data === 'close') {
