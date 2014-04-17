@@ -362,6 +362,7 @@ var realtimeDisplay = new Display();
 var hostname = 'arcturus.gb.nrao.edu'
 var port = 7777;
 realtimeDisplay.ws = new WebSocket("ws://" + hostname + ":" + port + "/websocket");
+
 realtimeDisplay.startRequestingData('A');
 
 // Handle data sent from the write_message server code in vdd_stream_socket.py
@@ -372,7 +373,9 @@ realtimeDisplay.ws.onmessage = function (evt) {
         console.log('Closing WebSocket.');
         realtimeDisplay.ws.close();
     } else {
+	var msg = JSON.parse(evt.data);
         var msg = eval(evt.data);
+	console.log('parsed with JSON');
 
         if ('bank_config' === msg[0]) {
             // set the radio button properties depending on what banks
