@@ -102,8 +102,6 @@ function Display() {
         if (this.spectrum_index < this.specData[this.currentBank].length && this.spectrum_index >= 0) {
             var data = this.specData[this.currentBank][this.spectrum_index];
             console.log('updating spectrum plot');
-            var min = this.getMin(data);
-            var max = this.getMax(data);
             this.drawSpectrum(bank, data);
         } else {
             this.drawSpectrum(null, null);
@@ -202,9 +200,6 @@ function Display() {
     };
 
     this.drawSpectrum = function (bank, data) {
-        var min = this.getMin(data);
-        var max = this.getMax(data);
-
         $("#waterfall-spectrum").highcharts(me.specoptions);
 
 	var wfspec = $('#waterfall-spectrum').highcharts();
@@ -212,12 +207,17 @@ function Display() {
 	wfspec.setTitle({text: 'Spectrometer '+bank});
     };
 
-    this.drawSpec = function(number, bank, data) {
-        var min = this.getMin(data);
-        var max = this.getMax(data);
+    this.drawSpec = function(number, bank, dataA, dataB, dataC, dataD, dataE, dataF, dataG, dataH) {
         $("#spectrum-"+number).highcharts(me.specoptions);
 	var specchart = $('#spectrum-'+number).highcharts();
-	specchart.series[0].setData(data);
+	specchart.series[0].setData(dataA);
+	specchart.series[1].setData(dataB);
+	specchart.series[2].setData(dataC);
+	specchart.series[3].setData(dataD);
+	specchart.series[4].setData(dataE);
+	specchart.series[5].setData(dataF);
+	specchart.series[6].setData(dataG);
+	specchart.series[7].setData(dataH);
 	specchart.setTitle({text: 'Spectrometer '+bank});
     };
 
@@ -226,7 +226,7 @@ function Display() {
         var me = this; // convention for local use of self
         me.updateId = setInterval(function () {
             me.ws.send(bank);
-        }, 1000); // 1000 milliseconds == 1 second
+        }, 2*1000); // 1000 milliseconds == 1 second
 	console.log('update id: ' + me.updateId); // debug
     };
 
@@ -334,7 +334,43 @@ function Display() {
             name: 'amplitude',
             marker: { enabled: false },
             animation: false,
-	}],
+	    },
+            {
+            name: 'amplitude',
+            marker: { enabled: false },
+            animation: false,
+	    },
+            {
+            name: 'amplitude',
+            marker: { enabled: false },
+            animation: false,
+	    },
+            {
+            name: 'amplitude',
+            marker: { enabled: false },
+            animation: false,
+	    },
+            {
+            name: 'amplitude',
+            marker: { enabled: false },
+            animation: false,
+	    },
+            {
+            name: 'amplitude',
+            marker: { enabled: false },
+            animation: false,
+	    },
+            {
+            name: 'amplitude',
+            marker: { enabled: false },
+            animation: false,
+	    },
+            {
+            name: 'amplitude',
+            marker: { enabled: false },
+            animation: false,
+	    }
+	    ],
         tooltip: { enabled: false },
         plotOptions: {
             series: {
@@ -359,11 +395,12 @@ var realtimeDisplay = new Display();
 
 // Open the web socket to the data source, which is the tornado server that
 // that is reading from the streaming manager(s)
-var hostname = 'arcturus.gb.nrao.edu'
+var hostname = 'colossus.gb.nrao.edu'
 var port = 7777;
 realtimeDisplay.ws = new WebSocket("ws://" + hostname + ":" + port + "/websocket");
 
 realtimeDisplay.startRequestingData('A');
+//realtimeDisplay.ws.send('A'); // just send a single request for DEBUG
 
 // Handle data sent from the write_message server code in vdd_stream_socket.py
 var me = realtimeDisplay;
@@ -423,26 +460,51 @@ realtimeDisplay.ws.onmessage = function (evt) {
             console.log('state', state);
             console.log('color min:', me.colormin);
             console.log('color max:', me.colormax);
-            console.log('length of data:', data[BANKNUM[bank]].length);
+            console.log('update waterfall:', update_waterfall);
+            console.log('length of data (number of subbands):', data[BANKNUM[bank]].length);
 
             me.currentBank = bank;
 
 	    if (update_waterfall == 1)
 		{
-		    me.pointWidth = me.canvasWidth / data[BANKNUM[bank]].length;
-		    me.addData(me.currentBank, data[BANKNUM[bank]]);
-		    me.drawDisplay(data[BANKNUM[bank]]);
+		    var subband = 0;
+		    me.pointWidth = me.canvasWidth / data[BANKNUM[bank]][subband].length;
+		    me.addData(me.currentBank, data[BANKNUM[bank]][subband]);
+		    me.drawDisplay(data[BANKNUM[bank]][subband]);
 		    me.updateNeighboringPlots(me.currentBank, me.crosshairX, me.crosshairY);
 		}
-
-	    me.drawSpec('1', 'A', data[BANKNUM['A']]);
-	    me.drawSpec('2', 'B', data[BANKNUM['B']]);
-	    me.drawSpec('3', 'C', data[BANKNUM['C']]);
-	    me.drawSpec('4', 'D', data[BANKNUM['D']]);
-	    me.drawSpec('5', 'E', data[BANKNUM['E']]);
-	    me.drawSpec('6', 'F', data[BANKNUM['F']]);
-	    me.drawSpec('7', 'G', data[BANKNUM['G']]);
-	    me.drawSpec('8', 'H', data[BANKNUM['H']]);
+	    console.log(data);
+	    // the 0 is the first subband
+	    me.drawSpec((BANKNUM['A']+1).toString(), 'A'
+			,data[BANKNUM['A']][0]
+	    		,data[BANKNUM['A']][1]
+	    		,data[BANKNUM['A']][2]
+	    		,data[BANKNUM['A']][3]
+	    		,data[BANKNUM['A']][4]
+	    		,data[BANKNUM['A']][5]
+	    		,data[BANKNUM['A']][6]
+	    		,data[BANKNUM['A']][7]
+			);
+	    me.drawSpec((BANKNUM['B']+1).toString(), 'B'
+			,data[BANKNUM['B']][0]
+	    		,data[BANKNUM['B']][1]
+	    		,data[BANKNUM['B']][2]
+	    		,data[BANKNUM['B']][3]
+	    		,data[BANKNUM['B']][4]
+	    		,data[BANKNUM['B']][5]
+	    		,data[BANKNUM['B']][6]
+	    		,data[BANKNUM['B']][7]
+			);
+	    me.drawSpec((BANKNUM['C']+1).toString(),'C'
+			,data[BANKNUM['C']][0]
+	    		,data[BANKNUM['C']][1]
+	    		,data[BANKNUM['C']][2]
+	    		,data[BANKNUM['C']][3]
+	    		,data[BANKNUM['C']][4]
+	    		,data[BANKNUM['C']][5]
+	    		,data[BANKNUM['C']][6]
+	    		,data[BANKNUM['C']][7]
+	    		);
 
         } else if ('error' === msg[0]) {
 	    // stop requesting data
