@@ -94,12 +94,18 @@ function Display() {
         this.spectrum_index = Math.floor(y / this.pointHeight);
 
         // debug
-        console.log(" x " + x + " pointWidth " + this.pointWidth + " y " + y + " pointHeight " + this.pointHeight);
-        console.log("clicked spectrum at: [row " + this.spectrum_index + ", channel " + this.channel_index + "]");
+        console.log(" x " + x + 
+		    " pointWidth " + this.pointWidth + 
+		    " y " + y + 
+		    " pointHeight " + this.pointHeight);
+        console.log("clicked spectrum at: " + 
+		    "[row " + this.spectrum_index + "," +
+		    " channel " + this.channel_index + "]");
 
         // If we clicked where there is data plot, tell the spectra plot to display that
         // row.  Otherwise, we clear the spectrum plot.
-        if (this.spectrum_index < this.specData[this.currentBank].length && this.spectrum_index >= 0) {
+        if (this.spectrum_index < this.specData[this.currentBank].length &&
+	    this.spectrum_index >= 0) {
             var data = this.specData[this.currentBank][this.spectrum_index];
             console.log('updating spectrum plot');
             this.drawSpectrum(bank, data);
@@ -107,7 +113,8 @@ function Display() {
             this.drawSpectrum(null, null);
         }
 
-        if (this.channel_index < this.specData[this.currentBank][0].length && this.channel_index >= 0) {
+        if (this.channel_index < this.specData[this.currentBank][0].length &&
+	    this.channel_index >= 0) {
             var data = new Array(this.nSpectra);
             for (var i = 0; i < data.length; i++) {
                 data[i] = null;
@@ -142,6 +149,7 @@ function Display() {
     };
 
     this.addData = function (bank, data) {
+
         // If we have reached the max amount of data to keep in
         // the buffer, pop off the end.
         if (this.specData[this.currentBank].length >= this.nSpectra) {
@@ -162,7 +170,8 @@ function Display() {
             this.secondaryCanvas = temp;
             this.rowCounter = 0;
         } else {
-            console.log('used ' + this.rowCounter + " of " + this.nSpectra + " available rows in plot");
+            console.log('used ' + this.rowCounter +
+			" of " + this.nSpectra + " available rows in plot");
         }
 
         // Finally, insert the new data to the beginning of the
@@ -207,8 +216,12 @@ function Display() {
 	wfspec.setTitle({text: 'Spectrometer '+bank});
     };
 
-    this.drawSpec = function(number, bank, dataA, dataB, dataC, dataD, dataE, dataF, dataG, dataH) {
-        $("#spectrum-"+number).highcharts(me.specoptions);
+    this.drawSpec = function(number, bank,
+			     dataA, dataB, dataC, dataD, 
+			     dataE, dataF, dataG, dataH) {
+	// maybe use arguments feature of js instead of dataA, dataB, etc.
+	// and a for loop for setData to iterate over arguments
+        $("#spectrum-" + number).highcharts(me.specoptions);
 	var specchart = $('#spectrum-'+number).highcharts();
 	specchart.series[0].setData(dataA);
 	specchart.series[1].setData(dataB);
@@ -328,65 +341,56 @@ function Display() {
     // highcharts display options object
     this.specoptions =  {
         chart: { animation: false },
-        legend: { enabled: false },
+	legend: { layout: 'vertical', verticalAlign: 'top', align: 'right' },
         credits: { enabled: false },
-        series: [{
-            name: 'amplitude',
-            marker: { enabled: false },
-            animation: false,
-	    },
-            {
-            name: 'amplitude',
-            marker: { enabled: false },
-            animation: false,
-	    },
-            {
-            name: 'amplitude',
-            marker: { enabled: false },
-            animation: false,
-	    },
-            {
-            name: 'amplitude',
-            marker: { enabled: false },
-            animation: false,
-	    },
-            {
-            name: 'amplitude',
-            marker: { enabled: false },
-            animation: false,
-	    },
-            {
-            name: 'amplitude',
-            marker: { enabled: false },
-            animation: false,
-	    },
-            {
-            name: 'amplitude',
-            marker: { enabled: false },
-            animation: false,
-	    },
-            {
-            name: 'amplitude',
-            marker: { enabled: false },
-            animation: false,
-	    }
-	    ],
+        series: [{name: 'SB1', marker: { enabled: false }, animation: false },
+                 {name: 'SB2', marker: { enabled: false }, animation: false },
+                 {name: 'SB3', marker: { enabled: false }, animation: false },
+                 {name: 'SB4', marker: { enabled: false }, animation: false },
+                 {name: 'SB5', marker: { enabled: false }, animation: false },
+                 {name: 'SB6', marker: { enabled: false }, animation: false },
+                 {name: 'SB7', marker: { enabled: false }, animation: false },
+                 {name: 'SB8', marker: { enabled: false }, animation: false }],
         tooltip: { enabled: false },
         plotOptions: {
             series: {
                 states: { hover: { enabled: false } },
-		lineWidth: 1
+		lineWidth: 2
             }
         },
         yAxis: {
             type: 'logarithmic',
             title: { text: null },
+	    labels: {
+		formatter: function () {
+		    return this.value.toPrecision(2);
+		}
+	    }
+        },
+        xAxis: {
+	    labels: {
+		formatter: function () {
+		    return this.value/1e9
+		}
+	    }
         },
     };
 
     // initialize event listeners
     this.initListeners();
 };
+
+function amplitudes(ampAndSkyFreq) {
+    // create a 1d array of the same length as the first dim of the 2d array
+    var amps = new Array(ampAndSkyFreq.length);
+
+    // put all the first index elements of the 2d array in the 1d array
+    for (var i = 0; i < ampAndSkyFreq.length; i++) {
+	amps[i] = ampAndSkyFreq[i][1];
+    }
+
+    return amps;
+}
 
 // ------------------------------------- methods defined above
 
@@ -449,7 +453,9 @@ realtimeDisplay.ws.onmessage = function (evt) {
 
 	    // display some metadata on screen
 	    $('#header').html('Spectrometer ' + bank);
-            $('#metadata').html('Project id: ' + project + ', Scan: ' + scan + ', Int: ' + integration);
+            $('#metadata').html('Project id: ' + project + ', ' +
+				'Scan: ' + scan + ', ' +
+				'Int: ' + integration);
             me.colormin = Math.log(cmin);
             me.colormax = Math.log(cmax);
 
@@ -468,43 +474,23 @@ realtimeDisplay.ws.onmessage = function (evt) {
 	    if (update_waterfall == 1)
 		{
 		    var subband = 0;
-		    me.pointWidth = me.canvasWidth / data[BANKNUM[bank]][subband].length;
-		    me.addData(me.currentBank, data[BANKNUM[bank]][subband]);
-		    me.drawDisplay(data[BANKNUM[bank]][subband]);
+		    var amps = amplitudes(data[BANKNUM[bank]][subband]);
+		    me.pointWidth = me.canvasWidth / amps.length;
+		    me.addData(me.currentBank, amps);
+		    me.drawDisplay(amps);
 		    me.updateNeighboringPlots(me.currentBank, me.crosshairX, me.crosshairY);
 		}
 	    console.log(data);
-	    // the 0 is the first subband
-	    me.drawSpec((BANKNUM['A']+1).toString(), 'A'
-			,data[BANKNUM['A']][0]
-	    		,data[BANKNUM['A']][1]
-	    		,data[BANKNUM['A']][2]
-	    		,data[BANKNUM['A']][3]
-	    		,data[BANKNUM['A']][4]
-	    		,data[BANKNUM['A']][5]
-	    		,data[BANKNUM['A']][6]
-	    		,data[BANKNUM['A']][7]
-			);
-	    me.drawSpec((BANKNUM['B']+1).toString(), 'B'
-			,data[BANKNUM['B']][0]
-	    		,data[BANKNUM['B']][1]
-	    		,data[BANKNUM['B']][2]
-	    		,data[BANKNUM['B']][3]
-	    		,data[BANKNUM['B']][4]
-	    		,data[BANKNUM['B']][5]
-	    		,data[BANKNUM['B']][6]
-	    		,data[BANKNUM['B']][7]
-			);
-	    me.drawSpec((BANKNUM['C']+1).toString(),'C'
-			,data[BANKNUM['C']][0]
-	    		,data[BANKNUM['C']][1]
-	    		,data[BANKNUM['C']][2]
-	    		,data[BANKNUM['C']][3]
-	    		,data[BANKNUM['C']][4]
-	    		,data[BANKNUM['C']][5]
-	    		,data[BANKNUM['C']][6]
-	    		,data[BANKNUM['C']][7]
-	    		);
+	    
+	    // draw the spec plots for all banks and subbands
+	    for (var banklabel in BANKNUM) {
+		var banknum = BANKNUM[banklabel];
+		var bankdata = data[banknum];
+		me.drawSpec((banknum+1).toString(), banklabel,
+			    // 8 subbands
+			    bankdata[0], bankdata[1], bankdata[2], bankdata[3],
+			    bankdata[4], bankdata[5], bankdata[6], bankdata[7]);
+	    }
 
         } else if ('error' === msg[0]) {
 	    // stop requesting data

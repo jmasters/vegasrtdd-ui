@@ -62,9 +62,9 @@
 }
 .spectrum {
     position: absolute;
-    width: 1024;
+    width: 1400;
     height: 200;
-    border: 0px solid green;
+    border: 0px solid grey;
     top: 900;
     left: 30;
 }
@@ -74,13 +74,13 @@
     left: 570;
 }
 #spectrum-1 { top: 900; }
-#spectrum-2 { top: 1100; }
-#spectrum-3 { top: 1300; }
-#spectrum-4 { top: 1500; }
-#spectrum-5 { top: 1700; }
-#spectrum-6 { top: 1900; }
-#spectrum-7 { top: 2100; }
-#spectrum-8 { top: 2300; }
+#spectrum-2 { top: 1201; }
+#spectrum-3 { top: 1402; }
+#spectrum-4 { top: 1603; }
+#spectrum-5 { top: 1804; }
+#spectrum-6 { top: 2005; }
+#spectrum-7 { top: 2206; }
+#spectrum-8 { top: 2407; }
 span {
     color: grey;
 }
