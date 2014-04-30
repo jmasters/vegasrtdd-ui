@@ -8,14 +8,30 @@ function Display() {
     var me = this; // convention for local use of self
 
     // Set listeners and associated event handlers.
-    this.initListeners = function () {
+    this.initListeners = function () { // --------------------------------------- initListeners
+
+        $('#reset-crosshairs').click(function (e) {
+		me.crosshairX = 1;
+		me.crosshairY = 0;
+
+		var canvas = $("#axis")[0];
+		var context = canvas.getContext("2d");
+		me.clearCanvas("#axis");
+
+		// display the position with text above the plot
+		$('#crosshair-position').html("Column " + (me.crosshairX) + ", Row " + (me.crosshairY));
+		me.updateNeighboringPlots(me.crosshairX, me.crosshairY);
+	    });
+
+	$('#high-level-view').click(function (e) {
+		//		window.location.href = '#spectrum-0';
+	    });
 
         // Registering click event for the plot.
         // On click, get the position of the click and draw cross
         // hairs to highlight the row and column clicked.  Then update
         // the timeseries and spectral plots to show the selected row
         // and column (channel).
-	// !!! CHANGE IDENTIFIER TO axis TO ENABLE
         $('#axis').click(function (e) {
 
             // get click pos relative to left edge of plot
@@ -41,8 +57,8 @@ function Display() {
 
             // display the position with text above the plot
             $('#crosshair-position').html("Column " + (me.crosshairX) + ", Row " + (me.crosshairY));
-            me.updateNeighboringPlots(me.currentBank, me.crosshairX, me.crosshairY);
-        });
+            me.updateNeighboringPlots(me.crosshairX, me.crosshairY);
+	    });
 
         $('#bank-choice').change(function () {
             // stop requesting data
@@ -54,16 +70,30 @@ function Display() {
             me.currentBank = $('#bank-choice').find(':checked').val();
             console.log("----------------- Changed to bank " + me.currentBank);
 
+	    // hide subband buttons
+	    $('#subband-choice > label').each(function() { this.style.visibility = "hidden"; });
+
             // request data every 1 second for new bank
             me.startRequestingData(me.currentBank);
         });
 
-	$('#mybutton').click( function() {
-	    me.ws.send(me.currentBank);
-	});
-    };
+        $('#subband-choice').change(function () {
+            // stop requesting data
+            clearTimeout(me.updateId);
 
-    this.clearCanvas = function (id) {
+            // clear the plot display
+            me.resetDisplay();
+
+            me.currentSubband = $('#subband-choice').find(':checked').val();
+            console.log("----------------- Changed to subband " + me.currentSubband);
+
+            // request data every 1 second for new bank
+            me.startRequestingData(me.currentBank);
+        });
+
+    }; // +++++++++++++++++++++++++++ end of initListeners
+
+    this.clearCanvas = function (id) { // --------------------------------------- clearCanvas
         var canvas = $(id)[0];
         canvas.width = canvas.width;
         canvas.height = canvas.height;
@@ -71,7 +101,7 @@ function Display() {
 
     // when we want to switch to displaying a different bank we
     // need to clear the plot and axes
-    this.resetDisplay = function () {
+    this.resetDisplay = function () { // --------------------------------------- resetDisplay
 
         // clear each of the two plot canvases
         this.clearCanvas(this.primaryCanvas);
@@ -81,19 +111,15 @@ function Display() {
         $(this.primaryCanvas).css("top", "-350px");
         $(this.secondaryCanvas).css("top", "150px");
 
-        delete this.specData[this.currentBank];
-        this.specData[this.currentBank] = [];
-
 	this.rowCounter = 0;
     };
 
-    this.updateNeighboringPlots = function (bank, x, y) {
+    this.updateNeighboringPlots = function (x, y) { // --------------------------------------- updateNeighboringPlots
 
         // Convert the (x, y) position for the mouse click to the right indices.
         this.channel_index = Math.floor(x / this.pointWidth);
         this.spectrum_index = Math.floor(y / this.pointHeight);
 
-        // debug
         console.log(" x " + x + 
 		    " pointWidth " + this.pointWidth + 
 		    " y " + y + 
@@ -104,32 +130,32 @@ function Display() {
 
         // If we clicked where there is data plot, tell the spectra plot to display that
         // row.  Otherwise, we clear the spectrum plot.
-        if (this.spectrum_index < this.specData[this.currentBank].length &&
+        if (this.spectrum_index < this.waterfallSpectra.length &&
 	    this.spectrum_index >= 0) {
-            var data = this.specData[this.currentBank][this.spectrum_index];
-            console.log('updating spectrum plot');
-            this.drawSpectrum(bank, data);
+
+            var spectrum = this.waterfallSpectra[this.spectrum_index];
+            this.drawSpecUnderWaterfall(spectrum);
+
         } else {
-            this.drawSpectrum(null, null);
+
+            this.drawSpecUnderWaterfall(null);
         }
 
-        if (this.channel_index < this.specData[this.currentBank][0].length &&
+        if (this.channel_index < this.waterfallSpectra[0].length &&
 	    this.channel_index >= 0) {
-            var data = new Array(this.nSpectra);
-            for (var i = 0; i < data.length; i++) {
-                data[i] = null;
-            }
 
-            for (var i = 0; i < this.specData[this.currentBank].length; i++) {
-                data[i] = this.specData[this.currentBank][i][this.channel_index];
-            }
+	    // create a time series array, initialized to null
+            var timeSeries = new Array(this.nSpectra);
+            for (var i = 0; i < timeSeries.length; i++) { timeSeries[i] = null; }
 
-            console.log('updating time series, length', data.length);
-            var min = this.getMin(data.slice(0, this.specData[this.currentBank].length));
-            var max = this.getMax(data.slice(0, this.specData[this.currentBank].length));
-            this.drawTimeSeries(data, min, max);
+	    // set values only for the number of spectra displayed in selected channel
+	    for (var jj = 0; jj < this.rowCounter; jj++) {
+                timeSeries[jj] = this.waterfallSpectra[jj][this.channel_index];
+            }
+            console.log('updating time series, length', timeSeries.length);
+            this.drawTimeSeries(timeSeries);
         } else {
-            this.drawTimeSeries(null, null, null);
+            this.drawTimeSeries(null);
         }
 
     };
@@ -148,12 +174,12 @@ function Display() {
         return Math.max.apply(null, data);
     };
 
-    this.addData = function (bank, data) {
+    this.addData = function (data) { // --------------------------------------- addData
 
         // If we have reached the max amount of data to keep in
         // the buffer, pop off the end.
-        if (this.specData[this.currentBank].length >= this.nSpectra) {
-            this.specData[this.currentBank].pop();
+        if (this.waterfallSpectra.length >= this.nSpectra) {
+            this.waterfallSpectra.pop();
         }
 
         // If we have plotted the max amount of data, swap the
@@ -176,10 +202,10 @@ function Display() {
 
         // Finally, insert the new data to the beginning of the
         // buffer.
-        this.specData[this.currentBank].unshift(data);
+        this.waterfallSpectra.unshift(data);
     };
 
-    this.drawTimeSeries = function (data, min, max) {
+    this.drawTimeSeries = function (data) { // --------------------------------------- drawTimeSeries
         $("#timeseries").highcharts({
             chart: { animation: false },
             legend: { enabled: false },
@@ -194,26 +220,31 @@ function Display() {
             }],
             tooltip: { enabled: false },
             plotOptions: {
-                series: {
-                    states: { hover: { enabled: false } },
-		    lineWidth: 1
-                }
-            },
+		    series: {
+			states: {
+			    hover: { enabled: false }
+			}, 
+			lineWidth: 1
+		    }
+	    },
             yAxis: {
-                type: 'logarithmic',
-                title: {
-                    text: null
-                },
-            },
-        });
+		    type: 'logarithmic',
+		    title: { text: null },
+		    labels: {
+			formatter: function () {
+			    return this.value.toPrecision(2);
+			}
+		    }
+	    },
+	});
     };
 
-    this.drawSpectrum = function (bank, data) {
-        $("#waterfall-spectrum").highcharts(me.specoptions);
+    this.drawSpecUnderWaterfall = function(data) { // --------------------------------------- drawSpecUnderWaterfall
+        $("#waterfall-spectrum").highcharts(me.waterfallSpecOptions);
 
 	var wfspec = $('#waterfall-spectrum').highcharts();
 	wfspec.series[0].setData(data);
-	wfspec.setTitle({text: 'Spectrometer '+bank});
+	wfspec.setTitle({text: 'Spectrum'});
     };
 
     this.drawSpec = function(number, bank,
@@ -234,16 +265,16 @@ function Display() {
 	specchart.setTitle({text: 'Spectrometer '+bank});
     };
 
-    this.startRequestingData = function (bank) {
+    this.startRequestingData = function (bank) { // --------------------------------------- startRequestingData
 	console.log('requesting data from bank ' + bank); // debug
         var me = this; // convention for local use of self
         me.updateId = setInterval(function () {
             me.ws.send(bank);
-        }, 2*1000); // 1000 milliseconds == 1 second
+        }, 3*1000); // 1000 milliseconds == 1 second
 	console.log('update id: ' + me.updateId); // debug
     };
 
-    this.drawDisplay = function (data) {
+    this.drawDisplay = function (data) {  // --------------------------------------- drawDisplay
         // First a few words about how the waterfall plot is done.
         // In order to avoid redrawing every rectangle each time
         // we get a new sample, I'm stacking each sample on top of
@@ -283,7 +314,8 @@ function Display() {
         context2.clearRect(0, clipPos, this.canvasWidth, (this.pointHeight * this.rowCounter));
     };
 
-    this.getFillColor = function (value) {
+    this.getFillColor = function (value) { // --------------------------------------- getFillColor
+
         var colorIdx = Math.floor(((value - this.colormin) / (this.colormax - this.colormin)) * 255);
         return 'rgb(' + colorIdx + ',0,0)';
     };
@@ -297,15 +329,14 @@ function Display() {
 
     // make the bank radio button choices a jquery-ui buttonset
     $("#bank-choice").buttonset();
-
+    $('#bank-choice > label').first().click()
+    $("#subband-choice").buttonset();
+    $('#subband-choice > label').each(function() { this.style.visibility = "hidden"; });
     this.currentBank = null;
-    this.specData = {
-        // each letter is a key to a bank or spectral window
-        A: [], // "[]" is the same as "new Array()"
-        B: [], C: [], D: [], E: [], F: [], G: [], H: [],
-    };
 
     this.nSpectra = 100; // number of spectra in waterfall plot
+    this.waterfallSpectra = new Array(this.nSpectra);
+
 
     // datapoint height and width, in pixels
     this.pointHeight = this.canvasHeight / this.nSpectra;
@@ -319,7 +350,7 @@ function Display() {
     this.rowCounter = 0; // keeps track of the current row position
 
     // waterfall index of time series to display in the spectrum plot
-    this.channel_index = 0;
+    this.channel_index = 1;
 
     // waterfall index of spectrum to display in the spectrum plot
     this.spectrum_index = 0;
@@ -335,22 +366,22 @@ function Display() {
     // position of the crosshairs
     // this determines what is displayed in the neighboring
     // time series and spectrum plots
-    this.crosshairX = 0; // default to channel 0
+    this.crosshairX = 1; // default to channel 0
     this.crosshairY = 0; // default to most recent spectrum
 
     // highcharts display options object
     this.specoptions =  {
         chart: { animation: false },
-	legend: { layout: 'vertical', verticalAlign: 'top', align: 'right' },
+	legend: { title: 'Subband', layout: 'vertical', verticalAlign: 'top', align: 'right' },
         credits: { enabled: false },
-        series: [{name: 'SB1', marker: { enabled: false }, animation: false },
-                 {name: 'SB2', marker: { enabled: false }, animation: false },
-                 {name: 'SB3', marker: { enabled: false }, animation: false },
-                 {name: 'SB4', marker: { enabled: false }, animation: false },
-                 {name: 'SB5', marker: { enabled: false }, animation: false },
-                 {name: 'SB6', marker: { enabled: false }, animation: false },
-                 {name: 'SB7', marker: { enabled: false }, animation: false },
-                 {name: 'SB8', marker: { enabled: false }, animation: false }],
+        series: [{name: '0', marker: { enabled: false }, animation: false },
+                 {name: '1', marker: { enabled: false }, animation: false },
+                 {name: '2', marker: { enabled: false }, animation: false },
+                 {name: '3', marker: { enabled: false }, animation: false },
+                 {name: '4', marker: { enabled: false }, animation: false },
+                 {name: '5', marker: { enabled: false }, animation: false },
+                 {name: '6', marker: { enabled: false }, animation: false },
+                 {name: '7', marker: { enabled: false }, animation: false }],
         tooltip: { enabled: false },
         plotOptions: {
             series: {
@@ -376,19 +407,51 @@ function Display() {
         },
     };
 
+    // highcharts display options object
+    this.waterfallSpecOptions =  {
+        chart: { animation: false },
+	legend: { enabled: false },
+        credits: { enabled: false },
+	series: [{
+                name: 'amplitude',
+                linewidth: 1,
+                marker: { enabled: false },
+                animation: false,
+            }],
+        tooltip: { enabled: false },
+        plotOptions: {
+            series: {
+                states: { hover: { enabled: false } },
+		lineWidth: 2
+            }
+        },
+        yAxis: {
+            type: 'logarithmic',
+            title: { text: null },
+	    labels: {
+		formatter: function () {
+		    return this.value.toPrecision(2);
+		}
+	    }
+        },
+    };
+
     // initialize event listeners
     this.initListeners();
-};
 
-function amplitudes(ampAndSkyFreq) {
+    // initialize subband to 0
+    this.currentSubband = 0;
+
+};  // +++++++++++++++++++++++++++++++++++++++++  end of Display function
+
+
+function amplitudes(ampAndSkyFreq) {  // --------------------------------------- amplitudes
     // create a 1d array of the same length as the first dim of the 2d array
     var amps = new Array(ampAndSkyFreq.length);
-
     // put all the first index elements of the 2d array in the 1d array
     for (var i = 0; i < ampAndSkyFreq.length; i++) {
 	amps[i] = ampAndSkyFreq[i][1];
     }
-
     return amps;
 }
 
@@ -427,7 +490,7 @@ realtimeDisplay.ws.onmessage = function (evt) {
             });
 
             me.currentBank = bank_arr[0];
-            $('#header').html('Spectrometer ' + me.currentBank);
+            $('#header').html('Spec ' + me.currentBank + ', SB ' + me.currentSubband);
 
             // send msg to server with default bank to display
             // request data every 1 second
@@ -437,7 +500,7 @@ realtimeDisplay.ws.onmessage = function (evt) {
 	    var BANKNUM = {'A':0, 'B':1, 'C':2, 'D':3,
 			    'E':4, 'F':5, 'G':6, 'H':7};
 
-            var bank = msg[1];
+            me.currentBank = msg[1];
 
 	    var metadata = msg[2];
             var project = metadata[0];
@@ -446,47 +509,57 @@ realtimeDisplay.ws.onmessage = function (evt) {
             var integration = metadata[3]; 
 	    var update_waterfall = metadata[4];
 
-	    var cmin = msg[3][0];
-	    var cmax = msg[3][1];
-
-            var data = msg[4];
+            var data = msg[3];
 
 	    // display some metadata on screen
-	    $('#header').html('Spectrometer ' + bank);
+
+	    $('#header').html('Spec ' + me.currentBank + ', SB ' + me.currentSubband);
             $('#metadata').html('Project id: ' + project + ', ' +
 				'Scan: ' + scan + ', ' +
 				'Int: ' + integration);
-            me.colormin = Math.log(cmin);
-            me.colormax = Math.log(cmax);
-
 	    // debug info
-            console.log('bank', bank);
+            console.log('bank', me.currentBank);
             console.log('project', project);
             console.log('scan', scan);
             console.log('state', state);
-            console.log('color min:', me.colormin);
-            console.log('color max:', me.colormax);
             console.log('update waterfall:', update_waterfall);
-            console.log('length of data (number of subbands):', data[BANKNUM[bank]].length);
+            console.log('length of data (number of subbands):', data[BANKNUM[me.currentBank]].length);
 
-            me.currentBank = bank;
+	    // set the first channel of every spectrum to null
+	    // this avoids displaying a common huge spike in the first channel
+	    for (var bankno = 0; bankno < data[BANKNUM[me.currentBank]].length; bankno++) {
+		for (var sbno = 0; sbno < data[bankno].length; sbno++) {
+		    data[bankno][sbno][0][1] = null;
+		}
+	    }
+	    for (var sbno = 0; sbno < data[BANKNUM[me.currentBank]].length; sbno++) {
+		$('#subband-choice > label')[sbno].style.visibility = "visible";
+	    }
+
+	    $('#subband-choice > label')[me.currentSubband].click()
 
 	    if (update_waterfall == 1)
 		{
-		    var subband = 0;
-		    var amps = amplitudes(data[BANKNUM[bank]][subband]);
+		    try {
+			var amps = amplitudes(data[BANKNUM[me.currentBank]][me.currentSubband]);
+		    }
+		    catch(err) {
+			console.log('ERROR');
+			console.log(data);
+		    }
 		    me.pointWidth = me.canvasWidth / amps.length;
-		    me.addData(me.currentBank, amps);
+		    me.addData(amps);
+		    me.colormin = Math.log(me.getMin(amps.slice(1)));
+		    me.colormax = Math.log(me.getMax(amps.slice(1)));
 		    me.drawDisplay(amps);
-		    me.updateNeighboringPlots(me.currentBank, me.crosshairX, me.crosshairY);
+		    me.updateNeighboringPlots(me.crosshairX, me.crosshairY);
 		}
-	    console.log(data);
 	    
 	    // draw the spec plots for all banks and subbands
 	    for (var banklabel in BANKNUM) {
 		var banknum = BANKNUM[banklabel];
 		var bankdata = data[banknum];
-		me.drawSpec((banknum+1).toString(), banklabel,
+		me.drawSpec((banknum).toString(), banklabel,
 			    // 8 subbands
 			    bankdata[0], bankdata[1], bankdata[2], bankdata[3],
 			    bankdata[4], bankdata[5], bankdata[6], bankdata[7]);
@@ -501,7 +574,7 @@ realtimeDisplay.ws.onmessage = function (evt) {
 
 	    var bank = msg[1];
 	    console.log('ERROR: data unavailable for bank ' + bank);
-	    $('#header').html('Spectrometer ' + bank);
+	    $('#header').html('Spec ' + me.currentBank + ', SB ' + me.currentSubband);
             $('#metadata').html('Data Unavailable');
         } else {
             console.log('ERROR: do not understand message', msg);

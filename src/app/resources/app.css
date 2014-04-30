@@ -39,12 +39,27 @@
     left: 30;
     top: 100;
 }
+#subband-choice {
+    position: absolute;
+    left: 430;
+    top: 100;
+}
 #left-sidebar {
     position: absolute;
     font-size: 20;
     color: grey;
     left: 30;
     top: 15;
+}
+#reset-crosshairs  {
+    position: absolute;
+    left: 580;
+    top: 50;
+}
+#high-level-view  {
+    position: absolute;
+    left: 580;
+    top: 70;
 }
 #timeseries {
     position: absolute;
@@ -73,14 +88,14 @@
     top: 40;
     left: 570;
 }
-#spectrum-1 { top: 900; }
-#spectrum-2 { top: 1201; }
-#spectrum-3 { top: 1402; }
-#spectrum-4 { top: 1603; }
-#spectrum-5 { top: 1804; }
-#spectrum-6 { top: 2005; }
-#spectrum-7 { top: 2206; }
-#spectrum-8 { top: 2407; }
+#spectrum-0 { top: 900; }
+#spectrum-1 { top: 1201; }
+#spectrum-2 { top: 1402; }
+#spectrum-3 { top: 1603; }
+#spectrum-4 { top: 1804; }
+#spectrum-5 { top: 2005; }
+#spectrum-6 { top: 2206; }
+#spectrum-7 { top: 2407; }
 span {
     color: grey;
 }
