@@ -83,11 +83,6 @@
     top: 900;
     left: 30;
 }
-#goto-spectra {
-    position: absolute;
-    top: 40;
-    left: 570;
-}
 #spectrum-0 { top: 900; }
 #spectrum-1 { top: 1201; }
 #spectrum-2 { top: 1402; }

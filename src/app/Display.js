@@ -64,6 +64,10 @@ function Display() {
             // stop requesting data
             clearTimeout(me.updateId);
 
+	    // clear neighboring plots
+            me.drawSpecUnderWaterfall(null);
+            me.drawTimeSeries(null);
+
             // clear the plot display
             me.resetDisplay();
 
@@ -80,6 +84,10 @@ function Display() {
         $('#subband-choice').change(function () {
             // stop requesting data
             clearTimeout(me.updateId);
+
+	    // clear neighboring plots
+            me.drawSpecUnderWaterfall(null);
+            me.drawTimeSeries(null);
 
             // clear the plot display
             me.resetDisplay();
@@ -476,6 +484,17 @@ realtimeDisplay.ws.onmessage = function (evt) {
     if (evt.data === 'close') {
         console.log('Closing WebSocket.');
         realtimeDisplay.ws.close();
+    } else if (evt.data === 'error') {
+	    // stop requesting data
+            clearTimeout(me.updateId);
+
+            // clear the plot display
+            me.resetDisplay();
+
+	    var bank = msg[1];
+	    console.log('ERROR: data unavailable for bank ' + bank);
+	    $('#header').html('Spec ' + me.currentBank + ', SB ' + me.currentSubband);
+            $('#metadata').html('Data Unavailable');
     } else {
 	var msg = JSON.parse(evt.data);
         var msg = eval(evt.data);
@@ -529,7 +548,9 @@ realtimeDisplay.ws.onmessage = function (evt) {
 	    // this avoids displaying a common huge spike in the first channel
 	    for (var bankno = 0; bankno < data[BANKNUM[me.currentBank]].length; bankno++) {
 		for (var sbno = 0; sbno < data[bankno].length; sbno++) {
+		    var lastChan = data[bankno][sbno].length - 1;
 		    data[bankno][sbno][0][1] = null;
+		    data[bankno][sbno][lastChan][1] = null;
 		}
 	    }
 	    for (var sbno = 0; sbno < data[BANKNUM[me.currentBank]].length; sbno++) {
@@ -549,8 +570,8 @@ realtimeDisplay.ws.onmessage = function (evt) {
 		    }
 		    me.pointWidth = me.canvasWidth / amps.length;
 		    me.addData(amps);
-		    me.colormin = Math.log(me.getMin(amps.slice(1)));
-		    me.colormax = Math.log(me.getMax(amps.slice(1)));
+		    me.colormin = Math.log(me.getMin(amps.slice(1,-1))); // omit first and last channels
+		    me.colormax = Math.log(me.getMax(amps.slice(1,-1)));
 		    me.drawDisplay(amps);
 		    me.updateNeighboringPlots(me.crosshairX, me.crosshairY);
 		}
@@ -565,17 +586,6 @@ realtimeDisplay.ws.onmessage = function (evt) {
 			    bankdata[4], bankdata[5], bankdata[6], bankdata[7]);
 	    }
 
-        } else if ('error' === msg[0]) {
-	    // stop requesting data
-            clearTimeout(me.updateId);
-
-            // clear the plot display
-            me.resetDisplay();
-
-	    var bank = msg[1];
-	    console.log('ERROR: data unavailable for bank ' + bank);
-	    $('#header').html('Spec ' + me.currentBank + ', SB ' + me.currentSubband);
-            $('#metadata').html('Data Unavailable');
         } else {
             console.log('ERROR: do not understand message', msg);
         }
