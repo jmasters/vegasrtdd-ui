@@ -474,8 +474,9 @@ var hostname = 'colossus.gb.nrao.edu'
 var port = 7777;
 realtimeDisplay.ws = new WebSocket("ws://" + hostname + ":" + port + "/websocket");
 
-realtimeDisplay.startRequestingData('A');
-//realtimeDisplay.ws.send('A'); // just send a single request for DEBUG
+realtimeDisplay.ws.onopen = function (event) {
+    realtimeDisplay.ws.send('active_banks'); // request a list of active banks
+};
 
 // Handle data sent from the write_message server code in vdd_stream_socket.py
 var me = realtimeDisplay;
@@ -496,9 +497,9 @@ realtimeDisplay.ws.onmessage = function (evt) {
 	    $('#header').html('Spec ' + me.currentBank + ', SB ' + me.currentSubband);
             $('#metadata').html('Data Unavailable');
     } else {
-	var msg = JSON.parse(evt.data);
+	//	var msg = JSON.parse(evt.data);
         var msg = eval(evt.data);
-	console.log('parsed with JSON');
+	console.log(msg[0])
 
         if ('bank_config' === msg[0]) {
             // set the radio button properties depending on what banks
@@ -546,11 +547,13 @@ realtimeDisplay.ws.onmessage = function (evt) {
 
 	    // set the first channel of every spectrum to null
 	    // this avoids displaying a common huge spike in the first channel
-	    for (var bankno = 0; bankno < data[BANKNUM[me.currentBank]].length; bankno++) {
+	    for (var bankno = 0; bankno < data.length; bankno++) {
 		for (var sbno = 0; sbno < data[bankno].length; sbno++) {
 		    var lastChan = data[bankno][sbno].length - 1;
-		    data[bankno][sbno][0][1] = null;
-		    data[bankno][sbno][lastChan][1] = null;
+		    if (data[bankno][sbno][0].length > 1) {
+			data[bankno][sbno][0][1] = null;
+			data[bankno][sbno][lastChan][1] = null;
+		    }
 		}
 	    }
 	    for (var sbno = 0; sbno < data[BANKNUM[me.currentBank]].length; sbno++) {
@@ -579,7 +582,13 @@ realtimeDisplay.ws.onmessage = function (evt) {
 	    // draw the spec plots for all banks and subbands
 	    for (var banklabel in BANKNUM) {
 		var banknum = BANKNUM[banklabel];
-		var bankdata = data[banknum];
+		if (Boolean(data[banknum])) {
+		    var bankdata = data[banknum];
+		} else {
+		    for (var ii=0; ii < 512; ii++) {
+			data[banknum] = [0,0];
+		    }
+		}
 		me.drawSpec((banknum).toString(), banklabel,
 			    // 8 subbands
 			    bankdata[0], bankdata[1], bankdata[2], bankdata[3],
