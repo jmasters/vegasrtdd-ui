@@ -75,10 +75,10 @@ function Display() {
             console.log("----------------- Changed to bank " + me.currentBank);
 
 	    // hide subband buttons
-	    $('#subband-choice > label').each(function() { this.style.visibility = "hidden"; });
+	    $('#subband-choice > input').prop("disabled", true);
 
             // request data every 1 second for new bank
-            me.startRequestingData(me.currentBank);
+            me.startRequestingData();
         });
 
         $('#subband-choice').change(function () {
@@ -96,7 +96,7 @@ function Display() {
             console.log("----------------- Changed to subband " + me.currentSubband);
 
             // request data every 1 second for new bank
-            me.startRequestingData(me.currentBank);
+            me.startRequestingData();
         });
 
     }; // +++++++++++++++++++++++++++ end of initListeners
@@ -273,11 +273,10 @@ function Display() {
 	specchart.setTitle({text: 'Spectrometer '+bank});
     };
 
-    this.startRequestingData = function (bank) { // --------------------------------------- startRequestingData
-	console.log('requesting data from bank ' + bank); // debug
+    this.startRequestingData = function () { // --------------------------------------- startRequestingData
         var me = this; // convention for local use of self
         me.updateId = setInterval(function () {
-            me.ws.send(bank);
+            me.ws.send('data');
         }, 3*1000); // 1000 milliseconds == 1 second
 	console.log('update id: ' + me.updateId); // debug
     };
@@ -338,8 +337,8 @@ function Display() {
     // make the bank radio button choices a jquery-ui buttonset
     $("#bank-choice").buttonset();
     $('#bank-choice > label').first().click()
+    $('#subband-choice > input').prop("disabled", true);
     $("#subband-choice").buttonset();
-    $('#subband-choice > label').each(function() { this.style.visibility = "hidden"; });
     this.currentBank = null;
 
     this.nSpectra = 100; // number of spectra in waterfall plot
@@ -482,121 +481,114 @@ realtimeDisplay.ws.onopen = function (event) {
 var me = realtimeDisplay;
 
 realtimeDisplay.ws.onmessage = function (evt) {
-    if (evt.data === 'close') {
-        console.log('Closing WebSocket.');
-        realtimeDisplay.ws.close();
-    } else if (evt.data === 'error') {
-	    // stop requesting data
-            clearTimeout(me.updateId);
+    var msg = eval(evt.data);
+    console.log(msg[0])
 
-            // clear the plot display
-            me.resetDisplay();
-
-	    var bank = msg[1];
-	    console.log('ERROR: data unavailable for bank ' + bank);
-	    $('#header').html('Spec ' + me.currentBank + ', SB ' + me.currentSubband);
-            $('#metadata').html('Data Unavailable');
-    } else {
-	//	var msg = JSON.parse(evt.data);
-        var msg = eval(evt.data);
-	console.log(msg[0])
-
-        if ('bank_config' === msg[0]) {
-            // set the radio button properties depending on what banks
-            // are available
-            var bank_arr = msg[1];
-            $.each(bank_arr, function (index, bank) {
+    if ('bank_config' === msg[0]) {
+	// set the radio button properties depending on what banks
+	// are available
+	var bank_arr = msg[1];
+	$.each(bank_arr, function (index, bank) {
                 console.log('enabling bank', bank);
             });
 
-            me.currentBank = bank_arr[0];
-            $('#header').html('Spec ' + me.currentBank + ', SB ' + me.currentSubband);
+	me.currentBank = bank_arr[0];
+	$('#header').html('Spec ' + me.currentBank + ', SB ' + me.currentSubband);
 
-            // send msg to server with default bank to display
-            // request data every 1 second
-	    me.startRequestingData(me.currentBank);
+	// send msg to server with default bank to display
+	// request data every 1 second
+	me.startRequestingData();
 
-        } else if ('data' === msg[0]) {
-	    var BANKNUM = {'A':0, 'B':1, 'C':2, 'D':3,
-			    'E':4, 'F':5, 'G':6, 'H':7};
+    } else if ('data' === msg[0]) {
+	var BANKNUM = {'A':0, 'B':1, 'C':2, 'D':3,
+		       'E':4, 'F':5, 'G':6, 'H':7};
 
-            me.currentBank = msg[1];
+	var metadata = msg[1];
+	var project = metadata[0];
+	var scan = metadata[1]; 
+	var state = metadata[2];
+	var integration = metadata[3]; 
+	var update_waterfall = metadata[4];
 
-	    var metadata = msg[2];
-            var project = metadata[0];
-            var scan = metadata[1]; 
-            var state = metadata[2];
-            var integration = metadata[3]; 
-	    var update_waterfall = metadata[4];
+	var data = msg[2];
 
-            var data = msg[3];
+	// display some metadata on screen
 
-	    // display some metadata on screen
+	$('#header').html('Spec ' + me.currentBank + ', Band ' + me.currentSubband);
+	$('#metadata').html('Project id: ' + project + ', ' +
+			    'Scan: ' + scan + ', ' +
+			    'Int: ' + integration);
+	// debug info
+	console.log('bank', me.currentBank);
+	console.log('project', project);
+	console.log('scan', scan);
+	console.log('state', state);
+	console.log('update waterfall:', update_waterfall);
+	console.log('length of data (number of subbands):', data[BANKNUM[me.currentBank]].length);
 
-	    $('#header').html('Spec ' + me.currentBank + ', SB ' + me.currentSubband);
-            $('#metadata').html('Project id: ' + project + ', ' +
-				'Scan: ' + scan + ', ' +
-				'Int: ' + integration);
-	    // debug info
-            console.log('bank', me.currentBank);
-            console.log('project', project);
-            console.log('scan', scan);
-            console.log('state', state);
-            console.log('update waterfall:', update_waterfall);
-            console.log('length of data (number of subbands):', data[BANKNUM[me.currentBank]].length);
-
-	    // set the first channel of every spectrum to null
-	    // this avoids displaying a common huge spike in the first channel
-	    for (var bankno = 0; bankno < data.length; bankno++) {
-		for (var sbno = 0; sbno < data[bankno].length; sbno++) {
-		    var lastChan = data[bankno][sbno].length - 1;
-		    if (data[bankno][sbno][0].length > 1) {
-			data[bankno][sbno][0][1] = null;
-			data[bankno][sbno][lastChan][1] = null;
-		    }
+	// set the first channel of every spectrum to null
+	// this avoids displaying a common huge spike in the first channel
+	for (var bankno = 0; bankno < data.length; bankno++) {
+	    for (var sbno = 0; sbno < data[bankno].length; sbno++) {
+		var lastChan = data[bankno][sbno].length - 1;
+		if (data[bankno][sbno][0].length > 1) {
+		    data[bankno][sbno][0][1] = null;
+		    data[bankno][sbno][lastChan][1] = null;
 		}
 	    }
-	    for (var sbno = 0; sbno < data[BANKNUM[me.currentBank]].length; sbno++) {
-		$('#subband-choice > label')[sbno].style.visibility = "visible";
-	    }
+	}
+	for (var sbno = 0; sbno < data[BANKNUM[me.currentBank]].length; sbno++) {
+	    var selector_string = '#subband-choice > input:eq(' + sbno + ')';
+	    $(selector_string).prop("disabled", false);
+	}
+	$("#subband-choice").buttonset("refresh");
+	$('#subband-choice > label')[me.currentSubband].click();
 
-	    $('#subband-choice > label')[me.currentSubband].click()
-
-	    if (update_waterfall == 1)
-		{
-		    try {
-			var amps = amplitudes(data[BANKNUM[me.currentBank]][me.currentSubband]);
-		    }
-		    catch(err) {
-			console.log('ERROR');
-			console.log(data);
-		    }
-		    me.pointWidth = me.canvasWidth / amps.length;
-		    me.addData(amps);
-		    me.colormin = Math.log(me.getMin(amps.slice(1,-1))); // omit first and last channels
-		    me.colormax = Math.log(me.getMax(amps.slice(1,-1)));
-		    me.drawDisplay(amps);
-		    me.updateNeighboringPlots(me.crosshairX, me.crosshairY);
+	if (update_waterfall == 1)
+	    {
+		try {
+		    var amps = amplitudes(data[BANKNUM[me.currentBank]][me.currentSubband]);
 		}
-	    
-	    // draw the spec plots for all banks and subbands
-	    for (var banklabel in BANKNUM) {
-		var banknum = BANKNUM[banklabel];
-		if (Boolean(data[banknum])) {
-		    var bankdata = data[banknum];
-		} else {
-		    for (var ii=0; ii < 512; ii++) {
-			data[banknum] = [0,0];
-		    }
+		catch(err) {
+		    console.log('ERROR');
+		    console.log(data);
 		}
-		me.drawSpec((banknum).toString(), banklabel,
-			    // 8 subbands
-			    bankdata[0], bankdata[1], bankdata[2], bankdata[3],
-			    bankdata[4], bankdata[5], bankdata[6], bankdata[7]);
+		me.pointWidth = me.canvasWidth / amps.length;
+		me.addData(amps);
+		me.colormin = Math.log(me.getMin(amps.slice(1,-1))); // omit first and last channels
+		me.colormax = Math.log(me.getMax(amps.slice(1,-1)));
+		me.drawDisplay(amps);
+		me.updateNeighboringPlots(me.crosshairX, me.crosshairY);
+		$('#status').html('Running');
+		$('#status').css('color', 'green');
 	    }
-
-        } else {
-            console.log('ERROR: do not understand message', msg);
-        }
+	else
+	    {
+		$('#status').html('Waiting for data');
+		$('#status').css('color', 'orange');
+	    }
+	
+	// draw the spec plots for all banks and subbands
+	for (var banklabel in BANKNUM) {
+	    var banknum = BANKNUM[banklabel];
+	    var select_string = "#bank-choice > label:eq(" + banknum + ") span";
+	    $(select_string).css({color: "grey"});
+	    if (Boolean(data[banknum])) {
+		var bankdata = data[banknum];
+		if ((data[banknum][0][100]) != 0) {
+		    $(select_string).css({color: "green"});
+		}
+	    } else {
+		for (var ii=0; ii < 512; ii++) {
+		    data[banknum] = [0,0];
+		}
+	    }
+	    me.drawSpec((banknum).toString(), banklabel,
+			// 8 subbands
+			bankdata[0], bankdata[1], bankdata[2], bankdata[3],
+			bankdata[4], bankdata[5], bankdata[6], bankdata[7]);
+	}
+    } else {
+	console.log('Not updating for message:', msg[0]);
     }
 };

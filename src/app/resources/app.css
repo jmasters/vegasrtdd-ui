@@ -51,6 +51,12 @@
     left: 30;
     top: 15;
 }
+#status {
+    position: absolute;
+    font-size: 20;
+    left: 255;
+    top: 15;
+}
 #reset-crosshairs  {
     position: absolute;
     left: 580;
